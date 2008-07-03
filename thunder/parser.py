@@ -9,6 +9,7 @@ class Thunder:
 		self.slurp.register_trigger(args={'t_pattern': '^set.*', 't_callback': self.set})
 		self.slurp.register_trigger(args={'t_pattern': '^detect-disks.*', 't_callback': self.detect_disks})
 		self.slurp.register_trigger(args={'t_pattern': '^partition-disk.*', 't_callback': self.partition_disk})
+		self.slurp.register_trigger(args={'t_pattern': '^commit-partitions.*', 't_callback': self.commit_partitions})
 		self.slurp.register_trigger(args={'t_pattern': '^format-partition.*', 't_callback': self.format_partition})
 		self.slurp.register_trigger(args={'t_pattern': '^mount-partition.*', 't_callback': self.mount_partition})
 		self.slurp.register_trigger(args={'t_pattern': '^swapon.*', 't_callback': self.swapon})
@@ -74,6 +75,10 @@ class Thunder:
 			else: psze = ''
 			print 'echo ",%s,E"|%s -uM %s' % (psze,self._which('sfdisk'),dev)
 
+		return
+
+	def commit_partitions(self, txt):
+		print txt
 		return
 
 	def format_partition(self, txt):
