@@ -1,6 +1,6 @@
 #!/usr/bin/env python2.5
 import os, sys, re
-import slurp
+from thunder import slurp
 
 class Thunder:
 	def __init__(self, file):
