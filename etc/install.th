@@ -1,7 +1,7 @@
 #
 # Some runtime settings
 #
-set stage3 http://192.168.10.101/stages/i686/stage3-i686-2008.0_beta2.tar.bz2
+set stage3 http://gentoo.osuosl.org/releases/x86/2008.0/stages/stage3-i686-2008.0.tar.bz2
 set e_root /mnt/gentoo
 set c_root /mnt/gentoo/etc/conf.d
 #
