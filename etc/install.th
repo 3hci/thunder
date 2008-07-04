@@ -100,3 +100,4 @@ exec-command "cat /mnt/gentoo/etc/conf.d/hwclock | sed s,#TIMEZONE=\"Factory\",T
 exec-command "mv /tmp/filename /mnt/gentoo/etc/conf.d/hwclock"
 exec-command "cat /mnt/gentoo/boot/grub/grub.conf | sed -e s,.ernel-g.*-r.,vmlinuz,g -e s,.nitra.*-r.,initrd.img,g >/tmp/filename"
 exec-command "mv /tmp/filename /mnt/gentoo/boot/grub/grub.conf"
+exec-batch

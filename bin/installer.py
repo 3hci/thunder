@@ -195,7 +195,6 @@ class Thunder:
 
 	def chroot_command(self, txt):
 		tmp = self._chk_subs(txt)
-		tmp = tmp.split()
 		line = tmp.split()
 		line.pop(0)
 		script = ''
