@@ -185,7 +185,7 @@ class Thunder:
 				cmd = 'mkdir %s && sleep 1' % where
 		sys.stdout.write('[ ] Mounting %s on %s' % (who, where))
 		sys.stdout.flush()
-		self._exec_cmd(re.sub('\'','',cmd))
+		self._exec_cmd(cmd[1:][:-1])
 		sys.stdout.write('\r[X]')
 		print ''
 		return
