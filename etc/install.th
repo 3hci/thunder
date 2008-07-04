@@ -14,8 +14,9 @@ detect-disks 	prefer 	sd accept hd
 # auto partition our shit
 #
 # 
-partition-disk %drive0 primary 1 boot 50 83
-partition-disk %drive0 primary 2 swap 32 82
+clear-partitions %drive0
+partition-disk %drive0 primary 1 boot 100 83
+partition-disk %drive0 primary 2 swap 2024 82
 partition-disk %drive0 extended all
 partition-disk %drive0 logical 4 root all 83
 commit-partitions
@@ -31,8 +32,8 @@ format-partition 	%data 	root 	ext3	 "-m 0 -J size=100"
 # Mount our partitions
 #
 #
-mount-partition %root auto /mnt/gentoo
-mount-partition %boot auto /mnt/gentoo/boot
+mount-partition %root ext3 /mnt/gentoo
+mount-partition %boot ext2 /mnt/gentoo/boot
 mount-partition %none proc /mnt/gentoo/proc
 mount-partition /sys none /mnt/gentoo/sys "bind"
 #

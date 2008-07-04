@@ -11,6 +11,7 @@ class Thunder:
 		self.chroot_commands = []
 		self.slurp.register_trigger(args={'t_pattern': '^set.*', 't_callback': self.set})
 		self.slurp.register_trigger(args={'t_pattern': '^detect-disks.*', 't_callback': self.detect_disks})
+		self.slurp.register_trigger(args={'t_pattern': '^clear-partitions.*', 't_callback': self.clear_partitions})
 		self.slurp.register_trigger(args={'t_pattern': '^partition-disk.*', 't_callback': self.partition_disk})
 		self.slurp.register_trigger(args={'t_pattern': '^commit-partitions.*', 't_callback': self.commit_partitions})
 		self.slurp.register_trigger(args={'t_pattern': '^format-partition.*', 't_callback': self.format_partition})
@@ -63,6 +64,13 @@ class Thunder:
 			cnt += 1
 		return self.disks
 
+	def clear_partitions(self, txt):
+		tmp = self._chk_subs(txt)
+		line = tmp.split()
+		disk = line[1]
+		print 'dd if=/dev/zero of=%s bs=512K count=1' % disk
+		return
+
 	def partition_disk(self, txt):
 		tmp = self._chk_subs(txt)
 		opts = tmp.split()
@@ -79,7 +87,7 @@ class Thunder:
 		elif type == 'extended':
 			if opts[3] != 'all': psze = opts[3]
 			else: psze = ''
-			self.partitions[os.path.basename(dev)].append(',%s,E,' % psze)
+			self.partitions[os.path.basename(dev)].append(',%s,E' % psze)
 		return
 
 	def commit_partitions(self, txt):
@@ -135,7 +143,9 @@ class Thunder:
 		elif len(line) == 2:
 			gen = 0
 			if line[0] == 'proc':
-				cmd = cmd+'-t proc none %s' % line[1]
+				cmd = cmd+'-t proc proc %s' % line[1]
+				if os.path.isdir(line[1]) == False:
+					print 'mkdir %s' % line[1]
 
 		if gen == 1:
 			if len(line) == 3:
@@ -151,8 +161,8 @@ class Thunder:
 						cmd = cmd+'-o %s -t %s %s %s' % (opts, what, who, where)
 					else:
 						cmd = cmd+'-o %s %s %s' % (opts, who, where)
-		if os.path.isdir(where) == False:
-			os.mkdir(where)
+			if os.path.isdir(where) == False:
+				print 'mkdir %s' % where
 		print cmd
 		return
 
