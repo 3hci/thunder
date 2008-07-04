@@ -67,6 +67,8 @@ exec-command "mv /tmp/filename /mnt/gentoo/etc/conf.d/hostname"
 exec-command "echo 'config_eth0=\"192.168.10.210 netmask 255.255.255.0\"' > /mnt/gentoo/etc/conf.d/net"
 exec-command "echo 'routes_eth0=\"default via 192.168.10.254\"' >> /mnt/gentoo/etc/conf.d/net"
 exec-command "echo 'SYNC=\"rsync://srvcs.thwap.org/portage/\" >> /mnt/gentoo/etc/make.conf"
+exec-command
+exec-batch
 #
 # We have the ability to run commands inside the chroot
 # they follow this syntax.
@@ -78,6 +80,12 @@ chroot-command %e_root "EMERGE_DEFAULT_OPTS=\"-avb1\" emerge portage"
 chroot-command %e_root "emerge vixie-cron syslog-ng gentoolkit gentoo-sources genkernel grub"
 chroot-command %e_root "for i in vixie-cron syslog-ng sshd; do rc-update add $i default; done"
 chroot-command %e_root "for i in net.eth0 ntp-client; do rc-update add $i boot; done"
-chroot-command %e_root "cd /usr/src/linux && zcat /proc/config.gz > /usr/src/linux/config && genkernel --kernel-config=config --lvm all"
+chroot-command %e_root "cd /usr/src/linux && zcat /proc/config.gz > /usr/src/linux/config"
+chroot-command %e_root "genkernel --kernel-config=config --lvm all"
 chroot-command %e_root "grub-install %drive0 "
-chroot-command %e_root "chpasswd root:changeme"
+chroot-command %e_root "echo root:changeme | chpasswd"
+chroot-batch %e_root
+#
+# bite it off
+#
+exec-command "echo "

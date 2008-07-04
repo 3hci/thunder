@@ -7,6 +7,8 @@ class Thunder:
 		self.slurp = slurp.Proc()
 		self.th_vars = []
 		self.partitions = {} 
+		self.host_commands = []
+		self.chroot_commands = []
 		self.slurp.register_trigger(args={'t_pattern': '^set.*', 't_callback': self.set})
 		self.slurp.register_trigger(args={'t_pattern': '^detect-disks.*', 't_callback': self.detect_disks})
 		self.slurp.register_trigger(args={'t_pattern': '^partition-disk.*', 't_callback': self.partition_disk})
@@ -16,7 +18,9 @@ class Thunder:
 		self.slurp.register_trigger(args={'t_pattern': '^swapon.*', 't_callback': self.swapon})
 		self.slurp.register_trigger(args={'t_pattern': '^fetch-and-extract.*', 't_callback': self.fetch_and_extract})
 		self.slurp.register_trigger(args={'t_pattern': '^exec-command.*', 't_callback': self.exec_command})
+		self.slurp.register_trigger(args={'t_pattern': '^exec-batch.*', 't_callback': self.exec_batch})
 		self.slurp.register_trigger(args={'t_pattern': '^chroot-command.*', 't_callback': self.chroot_command})
+		self.slurp.register_trigger(args={'t_pattern': '^chroot-batch.*', 't_callback': self.chroot_batch})
 		fp = open(file, 'r')
 		self.slurp.run(fp)
 
@@ -184,7 +188,15 @@ class Thunder:
 
 	def exec_command(self, txt):
 		line = self._chk_subs(txt)
-		print '/bin/sh -c %s' % line[13:]
+		self.host_commands.append('/bin/sh -c %s' % line[13:])
+		return
+
+	def exec_batch(self, txt):
+		print 'rm /tmp/commands.sh ; touch /tmp/commands.sh'
+		for i in self.host_commands:
+			print 'echo %s >> /tmp/commands.sh' % i
+		print 'cat /tmp/commands.sh | /bin/sh'
+		self.host_commands = []
 		return
 
 	def chroot_command(self, txt):
@@ -195,9 +207,18 @@ class Thunder:
 		line.pop(0)
 		script = ''
 		for i in line: script = script+i+' '
-		print 'echo %s > %s/chroot.sh' % (script, chroot)
-		print 'chmod +x %s/chroot.sh' % chroot
-		print 'chroot %s ./chroot.sh' % chroot
+		self.chroot_commands.append(script)
+		return
+
+	def chroot_batch(self, txt):
+		tmp = self._chk_subs(txt)
+		chroot = tmp.split()[1]
+		print 'rm %s/chroot-commands.sh ; touch %s/chroot-commands.sh' % (chroot,chroot)
+		for i in self.chroot_commands:
+			print 'echo %s >> %s/chroot-commands.sh' % (i,chroot)
+		print 'chmod +x %s/chroot-commands.sh' % chroot
+		print 'chroot %s ./chroot-commands.sh' % chroot
+		self.chroot_commands = []
 		return
 
 	def _chk_subs(self, txt):
