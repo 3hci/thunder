@@ -6,6 +6,7 @@ class Thunder:
 	def __init__(self, file):
 		self.slurp = slurp.Proc()
 		self.th_vars = []
+		self.partitions = {} 
 		self.slurp.register_trigger(args={'t_pattern': '^set.*', 't_callback': self.set})
 		self.slurp.register_trigger(args={'t_pattern': '^detect-disks.*', 't_callback': self.detect_disks})
 		self.slurp.register_trigger(args={'t_pattern': '^partition-disk.*', 't_callback': self.partition_disk})
@@ -54,6 +55,7 @@ class Thunder:
 		cnt=0
 		for i in self.disks:
 			self.th_vars.append(('drive%d' % cnt, '/dev/%s' % i))
+			self.partitions[i] = []
 			cnt += 1
 		return self.disks
 
@@ -69,16 +71,19 @@ class Thunder:
 			if opts[5] == 'all': psze = ''
 			ptyp = opts[6]
 			self.th_vars.append((pnam, '%s%s' % (dev,pnum)))
-			print 'echo ",%s,%s"|%s -uM %s' % (psze,ptyp,self._which('sfdisk'),dev)
+			self.partitions[os.path.basename(dev)].append(',%s,%s' % (psze,ptyp))
 		elif type == 'extended':
 			if opts[3] != 'all': psze = opts[3]
 			else: psze = ''
-			print 'echo ",%s,E"|%s -uM %s' % (psze,self._which('sfdisk'),dev)
-
+			self.partitions[os.path.basename(dev)].append(',%s,E,' % psze)
 		return
 
 	def commit_partitions(self, txt):
-		print txt
+		print 'rm /tmp/partitions ; touch /tmp/partitions'
+		for i in self.partitions.keys():
+			for b in self.partitions[i]:
+				print 'echo "%s" >> /tmp/partitions' % b
+		print 'cat /tmp/partitions | /sbin/sfdisk -uM /dev/hda'
 		return
 
 	def format_partition(self, txt):
