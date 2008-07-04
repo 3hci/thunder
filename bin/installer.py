@@ -4,6 +4,7 @@ from thunder import slurp
 
 class Thunder:
 	def __init__(self, file):
+		self.cmd_log = open('/tmp/thunder.log', 'w+')
 		self.slurp = slurp.Proc()
 		self.th_vars = []
 		self.partitions = {} 
@@ -258,7 +259,8 @@ class Thunder:
 		fp = open('%s/chroot-commands.sh' % chroot, 'w+')
 		fp.write('#!/bin/bash\n')
 		for i in self.chroot_commands:
-			fp.write(i+'\n')
+			line = i[1:][:-2]
+			fp.write(line+'\n')
 		self._exec_cmd('chmod +x %s/chroot-commands.sh' % chroot)
 		self._exec_cmd('chroot %s ./chroot-commands.sh' % chroot)
 		sys.stdout.write('\r[X]\n')
@@ -266,6 +268,8 @@ class Thunder:
 		return
 
 	def _exec_cmd(self, cmd):
+		self.cmd_log.write('%s &>/tmp/%s.log\n' % (cmd, cmd.split()[0]))
+		self.cmd_log.flush()
 		os.system('%s &>/tmp/%s.log' % (cmd, cmd.split()[0]))
 		return
 

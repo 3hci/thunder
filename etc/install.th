@@ -17,7 +17,7 @@ detect-disks 	prefer 	sd accept hd
 clear-partitions %drive0
 partition-disk %drive0 primary 1 boot 100 83
 partition-disk %drive0 primary 2 swap 2024 82
-partition-disk %drive0 primary 3 root 10240 83
+partition-disk %drive0 primary 3 root all 83
 commit-partitions
 #
 # Format our partitions
