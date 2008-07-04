@@ -151,6 +151,8 @@ class Thunder:
 						cmd = cmd+'-o %s -t %s %s %s' % (opts, what, who, where)
 					else:
 						cmd = cmd+'-o %s %s %s' % (opts, who, where)
+		if os.path.isdir(where) == False:
+			os.mkdir(where)
 		print cmd
 		return
 
