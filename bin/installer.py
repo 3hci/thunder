@@ -103,7 +103,7 @@ class Thunder:
 		fp = open('/tmp/partitions', 'w+')
 		for i in self.partitions.keys():
 			for b in self.partitions[i]:
-				fp.write(b)
+				fp.write(b+'\n')
 		fp.close()
 		self._exec_cmd('cat /tmp/partitions | /sbin/sfdisk -uM /dev/hda')
 		sys.stdout.write('\r[X]')
@@ -251,7 +251,7 @@ class Thunder:
 		fp = open('%s/chroot-commands.sh' % chroot, 'w+')
 		fp.write('#!/bin/bash\n')
 		for i in self.chroot_commands:
-			fp.write(i)
+			fp.write(i+'\n')
 		self._exec_cmd('chmod +x %s/chroot-commands.sh' % chroot)
 		self._exec_cmd('chroot %s ./chroot-commands.sh' % chroot)
 		sys.stdout.write('\r[X]\n')
