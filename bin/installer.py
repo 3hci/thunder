@@ -76,6 +76,7 @@ class Thunder:
 		self._exec_cmd('dd if=/dev/zero of=%s bs=512K count=1' % disk)
 		sys.stdout.write('[X] Clearing partitions\n')
 		sys.stdout.write('[ ] Adding partitions: ')
+		sys.stdout.flush()
 		return
 
 	def partition_disk(self, txt):
@@ -182,6 +183,7 @@ class Thunder:
 			if os.path.isdir(where) == False:
 				cmd = 'mkdir %s && sleep 1' % where
 		sys.stdout.write('[ ] Mounting %s on %s' % (who, where))
+		sys.stdout.flush()
 		self._exec_cmd(cmd)
 		sys.stdout.write('\r[X]')
 		print ''
@@ -194,6 +196,7 @@ class Thunder:
 			if self._which('swapon') != False:
 				cmd = 'swapon %s' % i
 				sys.stdout.write('[ ] Activating swap on %s' % i)
+				sys.stdout.flush()
 				self._exec_cmd(cmd)
 				sys.stdout.write('\r[X]\n')
 		return
@@ -213,9 +216,11 @@ class Thunder:
 		if archive[-2:] == 'z2': args = '-jxf'
 		if archive[-2:] == 'gz': args = '-zxf'
 		sys.stdout.write('[ ] Fetching %s' % os.path.basename(uri))
+		sys.stdout.flush()
 		self._exec_cmd('wget -c %s' % uri)
 		sys.stdout.write('\r[X]\n')
 		sys.stdout.write('[ ] Extracting into %s' % lcation)
+		sys.stdout.flush()
 		self._exec_cmd('tar %s %s -C %s' % (args, archive, lcation))
 		sys.stdout.write('\r[X]\n')
 		return
@@ -227,6 +232,7 @@ class Thunder:
 
 	def exec_batch(self, txt):
 		sys.stdout.write('[ ] Running commands')
+		sys.stdout.flush()
 		fp = open('/tmp/commands.sh', 'w+')
 		for i in self.host_commands:
 			fp.write(re.sub('"', '\\\"', i)+'\n')
@@ -248,6 +254,7 @@ class Thunder:
 		tmp = self._chk_subs(txt)
 		chroot = tmp.split()[1]
 		sys.stdout.write('[ ] Executing commands in chroot.')
+		sys.stdout.flush()
 		fp = open('%s/chroot-commands.sh' % chroot, 'w+')
 		fp.write('#!/bin/bash\n')
 		for i in self.chroot_commands:
