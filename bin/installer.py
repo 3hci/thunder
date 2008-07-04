@@ -1,4 +1,4 @@
-#!/usr/bin/env python2.5
+#!/usr/bin/env python
 import os, sys, re
 from thunder import slurp
 
@@ -31,6 +31,7 @@ class Thunder:
 		return
 	
 	def detect_disks(self, txt):
+		sys.stdout.write('Detecting disks: ')
 		tmp_dsks = []
 		for i in os.listdir('/dev/'):
 			if i.find('hd') != -1 or i.find('sd') != -1:
@@ -56,19 +57,25 @@ class Thunder:
 		acpt_tmp.sort()
 		for a in (pref_tmp, acpt_tmp):
 			for b in a:
+				sys.stdout.write(b+' ')
 				self.disks.append(b)
 		cnt=0
 		for i in self.disks:
 			self.th_vars.append(('drive%d' % cnt, '/dev/%s' % i))
 			self.partitions[i] = []
 			cnt += 1
+		print ''
 		return self.disks
 
 	def clear_partitions(self, txt):
+		sys.stdout.write('[ ] Clearing partitions\r')
+		sys.stdout.flush()
 		tmp = self._chk_subs(txt)
 		line = tmp.split()
 		disk = line[1]
-		print 'dd if=/dev/zero of=%s bs=512K count=1' % disk
+		self._exec_cmd('dd if=/dev/zero of=%s bs=512K count=1' % disk)
+		sys.stdout.write('[X] Clearing partitions\n')
+		sys.stdout.write('[ ] Adding partitions: ')
 		return
 
 	def partition_disk(self, txt):
@@ -82,20 +89,25 @@ class Thunder:
 			if opts[5] != 'all': psze = opts[5]
 			if opts[5] == 'all': psze = ''
 			ptyp = opts[6]
+			sys.stdout.write('%s%s ' % (dev,pnum))
 			self.th_vars.append((pnam, '%s%s' % (dev,pnum)))
 			self.partitions[os.path.basename(dev)].append(',%s,%s' % (psze,ptyp))
 		elif type == 'extended':
 			if opts[3] != 'all': psze = opts[3]
 			else: psze = ''
+			sys.stdout.write('swap ')
 			self.partitions[os.path.basename(dev)].append(',%s,E' % psze)
 		return
 
 	def commit_partitions(self, txt):
-		print 'rm /tmp/partitions ; touch /tmp/partitions'
+		fp = open('/tmp/partitions', 'w+')
 		for i in self.partitions.keys():
 			for b in self.partitions[i]:
-				print 'echo "%s" >> /tmp/partitions' % b
-		print 'cat /tmp/partitions | /sbin/sfdisk -uM /dev/hda'
+				fp.write(b)
+		fp.close()
+		self._exec_cmd('cat /tmp/partitions | /sbin/sfdisk -uM /dev/hda')
+		sys.stdout.write('\r[X]')
+		print ''
 		return
 
 	def format_partition(self, txt):
@@ -112,10 +124,14 @@ class Thunder:
 			t = re.sub('\"', '', args)
 			args = t
 			if self._which('mkfs.%s' % type) != False:
-				print 'mkfs.%s -L %s %s %s' % (type, labl, args, part)
+				cmd = 'mkfs.%s -L %s %s %s' % (type, labl, args, part)
 		else:
 			if self._which('mkswap') != False:
-				print 'mkswap -L %s %s' % (labl, part)
+				cmd = 'mkswap -L %s %s' % (labl, part)
+		sys.stdout.write('[ ] Formatting %s as %s\r' % (part,type))
+		sys.stdout.flush()
+		self._exec_cmd(cmd)
+		sys.stdout.write('\r[X]\n')
 		return
 
 	def mount_partition(self, txt):
@@ -145,7 +161,9 @@ class Thunder:
 			if line[0] == 'proc':
 				cmd = cmd+'-t proc proc %s' % line[1]
 				if os.path.isdir(line[1]) == False:
-					print 'mkdir %s' % line[1]
+					cmd = 'mkdir %s && sleep 1' % line[1]
+				who = 'proc'
+				where = line[1]
 
 		if gen == 1:
 			if len(line) == 3:
@@ -162,8 +180,11 @@ class Thunder:
 					else:
 						cmd = cmd+'-o %s %s %s' % (opts, who, where)
 			if os.path.isdir(where) == False:
-				print 'mkdir %s' % where
-		print cmd
+				cmd = 'mkdir %s && sleep 1' % where
+		sys.stdout.write('[ ] Mounting %s on %s' % (who, where))
+		self._exec_cmd(cmd)
+		sys.stdout.write('\r[X]')
+		print ''
 		return
 
 	def swapon(self, txt):
@@ -171,7 +192,10 @@ class Thunder:
 		tmp.pop(0)
 		for i in tmp:
 			if self._which('swapon') != False:
-				print 'swapon %s' % i
+				cmd = 'swapon %s' % i
+				sys.stdout.write('[ ] Activating swap on %s' % i)
+				self._exec_cmd(cmd)
+				sys.stdout.write('\r[X]\n')
 		return
 
 	def fetch_and_extract(self, txt):
@@ -188,20 +212,26 @@ class Thunder:
 			lcation = lcation_t
 		if archive[-2:] == 'z2': args = '-jxf'
 		if archive[-2:] == 'gz': args = '-zxf'
-		print 'wget -c %s' % uri
-		print 'tar %s %s -C %s' % (args, archive, lcation)
+		sys.stdout.write('[ ] Fetching %s' % os.path.basename(uri))
+		self._exec_cmd('wget -c %s' % uri)
+		sys.stdout.write('\r[X]\n')
+		sys.stdout.write('[ ] Extracting into %s' % lcation)
+		self._exec_cmd('tar %s %s -C %s' % (args, archive, lcation))
+		sys.stdout.write('\r[X]\n')
 		return
 
 	def exec_command(self, txt):
 		line = self._chk_subs(txt)
-		self.host_commands.append('/bin/sh -c %s' % line[13:])
+		self.host_commands.append('/bin/bash -c %s' % line[13:])
 		return
 
 	def exec_batch(self, txt):
-		print 'rm /tmp/commands.sh ; touch /tmp/commands.sh'
+		sys.stdout.write('[ ] Running commands')
+		fp = open('/tmp/commands.sh', 'w+')
 		for i in self.host_commands:
-			print 'echo %s >> /tmp/commands.sh' % i
-		print 'cat /tmp/commands.sh | /bin/sh'
+			fp.write(re.sub('"', '\\\"', i)+'\n')
+		self._exec_cmd('cat /tmp/commands.sh | /bin/bash')
+		sys.stdout.write('\r[X] Executed script, it was hopefully successful, I didn\'t check.\n')
 		self.host_commands = []
 		return
 
@@ -217,12 +247,19 @@ class Thunder:
 	def chroot_batch(self, txt):
 		tmp = self._chk_subs(txt)
 		chroot = tmp.split()[1]
-		print 'rm %s/chroot-commands.sh ; touch %s/chroot-commands.sh' % (chroot,chroot)
+		sys.stdout.write('[ ] Executing commands in chroot.')
+		fp = open('%s/chroot-commands.sh' % chroot, 'w+')
+		fp.write('#!/bin/bash\n')
 		for i in self.chroot_commands:
-			print 'echo %s >> %s/chroot-commands.sh' % (i,chroot)
-		print 'chmod +x %s/chroot-commands.sh' % chroot
-		print 'chroot %s ./chroot-commands.sh' % chroot
+			fp.write(i)
+		self._exec_cmd('chmod +x %s/chroot-commands.sh' % chroot)
+		self._exec_cmd('chroot %s ./chroot-commands.sh' % chroot)
+		sys.stdout.write('\r[X]\n')
 		self.chroot_commands = []
+		return
+
+	def _exec_cmd(self, cmd):
+		os.system('%s &>/tmp/%s.log' % (cmd, cmd.split()[0]))
 		return
 
 	def _chk_subs(self, txt):
