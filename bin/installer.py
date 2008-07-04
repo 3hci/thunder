@@ -87,12 +87,18 @@ class Thunder:
 		return
 
 	def format_partition(self, txt):
-		line = self._chk_subs(txt).split()
-		line.pop(0)
-		part = line[0]
-		line.pop(0)
-		type = line[0]
-		line.pop(0)
+		try:
+			line = self._chk_subs(txt).split()
+			line.pop(0)
+			part = line[0]
+			labl = line[1].upper()
+			type = line[2]
+		except IndexError:
+			line = self._chk_subs(txt).split()
+			line.pop(0)
+			part = line[0]
+			type = line[1]
+			
 		if len(line) > 0:
 			args = ''
 			for i in line:
@@ -100,7 +106,7 @@ class Thunder:
 			t = re.sub('\"', '', args)
 			args = t
 			if self._which('mkfs.%s' % type) != False:
-				print 'mkfs.%s %s %s' % (type, args, part)
+				print 'mkfs.%s -L %s %s %s' % (type, labl, args, part)
 		else:
 			if self._which('mkswap') != False:
 				print 'mkswap %s' % part

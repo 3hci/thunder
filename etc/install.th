@@ -30,10 +30,10 @@ commit-partitions
 #
 # [command] <name(reference above> <fs type> [<optional args to relevant mkfs.*>]
 #
-format-partition %boot ext2 "-m 0"
+format-partition %boot boot ext2 "-m 0"
 format-partition %swap swap
-format-partition %root ext3 "-m 0 -J size=100"
-format-partition %data ext3 "-m 0 -J size=100"
+format-partition %root root ext3 "-m 0 -J size=100"
+format-partition %data root ext3 "-m 0 -J size=100"
 #
 # Mount our partitions
 #
