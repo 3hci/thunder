@@ -13,21 +13,14 @@ detect-disks 	prefer 	sd accept hd
 #
 # auto partition our shit
 #
-# [command] [primary|extended] <position> <name> <size in MB|'auto'> <partition type>
 # 
 partition-disk %drive0 primary 1 boot 50 83
 partition-disk %drive0 primary 2 swap 32 82
 partition-disk %drive0 extended all
 partition-disk %drive0 logical 4 root all 83
-#
-# [command]
-#
 commit-partitions
-#partition-disk %drive1 primary 1 data all 83
 #
 # Format our partitions
-#
-# [command] <name(reference above> <fs type> [<optional args to relevant mkfs.*>]
 #
 #   commandi     	disk  	label	type	 args
 format-partition 	%boot 	boot 	ext2	 "-m 0"
@@ -37,7 +30,6 @@ format-partition 	%data 	root 	ext3	 "-m 0 -J size=100"
 #
 # Mount our partitions
 #
-# [command] <name> <fstype|auto> <mountpoint> [<optional args to mount>]
 #
 mount-partition %root auto /mnt/gentoo
 mount-partition %boot auto /mnt/gentoo/boot
@@ -46,20 +38,17 @@ mount-partition /sys none /mnt/gentoo/sys "bind"
 #
 # Activate swap
 #
-# [command] <swap dev> [<swap dev> <swap dev>]
 #
 swapon %swap
 #
 # Fetch our stage tarball, extract our stage tarball
 #
-# [command] <uri> <destination directory>
 #
 fetch-and-extract %stage3 %e_root
 #
 # We have the ability to exec commands on the host, this lets us
 # make edits to files inside our installation root
 #
-# [command] <"command string to be run">
 #
 exec-command "cat /mnt/gentoo/etc/conf.d/hostname | sed s,localhost,myhostname,g >/tmp/filename"
 exec-command "mv /tmp/filename /mnt/gentoo/etc/conf.d/hostname"
@@ -72,13 +61,11 @@ exec-command "echo 'EMERGE_DEFAULT_OPTS=\"-avbuDg\"' >>/mnt/gentoo/etc/make.conf
 exec-command "echo 'ACCEPT_KEYWORDS=\"~x86\"' >>/mnt/gentoo/etc/make.conf"
 exec-command "echo 'FEATURES=\"distcc parallel-fetch\"' >>/mnt/gentoo/etc/make.conf"
 exec-command "ln -s /mnt/gentoo/usr/share/zoneinfo/CST6CDT /mnt/gentoo/etc/localtime"
-exec-command "echo '"
 exec-batch
 #
 # We have the ability to run commands inside the chroot
 # they follow this syntax.
 #
-# [command] <chroot directory> <"commands to be run (note: make sure they are in double quotes">
 #
 chroot-command "emerge --sync"
 chroot-command "EMERGE_DEFAULT_OPTS=\"-vb1\" emerge portage"

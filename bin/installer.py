@@ -96,7 +96,8 @@ class Thunder:
 		part = line[0]
 		labl = line[1].upper()
 		type = line[2]
-		if len(line) > 3:
+		for i in [1,2,3]: line.pop(0)
+		if len(line) > 0:
 			args = ''
 			for i in line:
 				args = args+i+' '
