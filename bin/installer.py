@@ -231,16 +231,16 @@ class Thunder:
 		ln_t.pop(0)
 		li_t = ''
 		for i in ln_t: li_t = li_t+i+' '
-		if li_t[1].isalpha() == False and li_t[len(li_t)-1].isalpha() == False:
+		if li_t[0].isalpha() == False and li_t[len(li_t)-1].isalpha() == False:
 			line = li_t[1:][:-1]
-		elif li_t[1].isalpha() == False and li_t[len(li_t)-1].isalpha() == True:
+		elif li_t[0].isalpha() == False and li_t[len(li_t)-1].isalpha() == True:
 			line = li_t[1:]
-		elif li_t[1].isalpha() == True and li_t[len(li_t)-1].isalpha() == False:
+		elif li_t[0].isalpha() == True and li_t[len(li_t)-1].isalpha() == False:
 			line = li_t[:-1]
 		else: line = li_t
 		sys.stdout.write('[ ] %s ... ' % line[:55])
 		sys.stdout.flush()
-		ret = 0#os.system(line)
+		ret = os.system(line)
 		if ret == 0: sys.stdout.write('\r[+] %s ... \n' % line[:55])
 		else: sys.stdout.write('\r[X] %s ... \n' % line[:55])
 		sys.stdout.flush()
@@ -274,7 +274,7 @@ class Thunder:
 	def _exec_cmd(self, cmd):
 		self.cmd_log.write('%s &>/tmp/%s.log\n' % (cmd, cmd.split()[0]))
 		self.cmd_log.flush()
-		#os.system('%s &>/tmp/%s.log' % (cmd, cmd.split()[0]))
+		os.system('%s &>/tmp/%s.log' % (cmd, cmd.split()[0]))
 		return
 
 	def _chk_subs(self, txt):

@@ -1,7 +1,7 @@
 #
 # Some runtime settings
 #
-set stage3 http://gentoo.osuosl.org/releases/x86/2008.0/stages/stage3-i686-2008.0.tar.bz2
+set stage3 ftp://sysinst:install@srvcs.thwap.org/stage3-i686-2008.0.tar.bz2
 set e_root /mnt/gentoo
 set c_root /mnt/gentoo/etc/conf.d
 #
