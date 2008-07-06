@@ -50,20 +50,19 @@ fetch-and-extract %stage3 %e_root
 # make edits to files inside our installation root
 #
 #
-exec-command 'cat /mnt/gentoo/etc/conf.d/hostname | sed s,localhost,myhostname,g >/tmp/filename'
-exec-command 'mv /tmp/filename /mnt/gentoo/etc/conf.d/hostname'
-exec-command 'echo \'config_eth0=\'192.168.10.210 netmask 255.255.255.0\'\' > /mnt/gentoo/etc/conf.d/net'
-exec-command 'echo \'routes_eth0=\'default via 192.168.10.254\'\' >> /mnt/gentoo/etc/conf.d/net'
-exec-command 'echo \'SYNC=\'rsync://srvcs.thwap.org/portage/\'\' >> /mnt/gentoo/etc/make.conf'
-exec-command 'echo \'PORTDIR_OVERLAY=\'/usr/local/portage\'\' >>/mnt/gentoo/etc/make.conf'
-exec-command 'echo \'PORTAGE_BINHOST=\'ftp://srvrs:b1nh05+!@srvcs.thwap.org/All/\'\' >>/mnt/gentoo/etc/make.conf'
-exec-command 'echo \'EMERGE_DEFAULT_OPTS=\'-vbuDg\'\' >>/mnt/gentoo/etc/make.conf'
-exec-command 'echo \'ACCEPT_KEYWORDS=\'~x86\'\' >>/mnt/gentoo/etc/make.conf'
-exec-command 'echo \'FEATURES=\'distcc parallel-fetch\'\' >>/mnt/gentoo/etc/make.conf'
-exec-command 'ln -s /mnt/gentoo/usr/share/zoneinfo/CST6CDT /mnt/gentoo/etc/localtime'
-exec-command 'echo \'search thwap.org\' >/mnt/gentoo/etc/resolv.conf'
-exec-command 'echo \'nameserver 192.168.10.101\' >>/mnt/gentoo/etc/resolv.conf'
-exec-batch
+exec-command "cat /mnt/gentoo/etc/conf.d/hostname | sed s,localhost,myhostname,g >/tmp/filename"
+exec-command "mv /tmp/filename /mnt/gentoo/etc/conf.d/hostname"
+exec-command "echo 'config_eth0="192.168.10.210 netmask 255.255.255.0"' > /mnt/gentoo/etc/conf.d/net"
+exec-command "echo 'routes_eth0="default via 192.168.10.254"' >> /mnt/gentoo/etc/conf.d/net"
+exec-command "echo 'SYNC="rsync://srvcs.thwap.org/portage/"' >> /mnt/gentoo/etc/make.conf"
+exec-command "echo 'PORTDIR_OVERLAY="/usr/local/portage"' >>/mnt/gentoo/etc/make.conf"
+exec-command "echo 'PORTAGE_BINHOST="ftp://srvrs:b1nh05+!@srvcs.thwap.org/All/"' >>/mnt/gentoo/etc/make.conf"
+exec-command "echo 'EMERGE_DEFAULT_OPTS="-vbuDg"' >>/mnt/gentoo/etc/make.conf"
+exec-command "echo 'ACCEPT_KEYWORDS="~x86"' >>/mnt/gentoo/etc/make.conf"
+exec-command "echo 'FEATURES="distcc parallel-fetch"' >>/mnt/gentoo/etc/make.conf"
+exec-command "ln -s /mnt/gentoo/usr/share/zoneinfo/CST6CDT /mnt/gentoo/etc/localtime"
+exec-command "echo 'search thwap.org' >/mnt/gentoo/etc/resolv.conf"
+exec-command "echo 'nameserver 192.168.10.101' >>/mnt/gentoo/etc/resolv.conf"
 #
 # We have the ability to run commands inside the chroot
 # they follow this syntax.
@@ -85,8 +84,7 @@ chroot-batch %e_root
 #
 # bite it off
 #
-exec-command 'cat /mnt/gentoo/etc/conf.d/hwclock | sed s,#TIMEZONE=\'Factory\',TIMEZONE=\'America/Chicago\',g >/tmp/filename'
-exec-command 'mv /tmp/filename /mnt/gentoo/etc/conf.d/hwclock'
-exec-command 'cat /mnt/gentoo/boot/grub/grub.conf | sed -e s,.ernel-g.*-r.,vmlinuz,g -e s,.nitra.*-r.,initrd.img,g >/tmp/filename'
+exec-command "cat /mnt/gentoo/etc/conf.d/hwclock | sed s,#TIMEZONE=\'Factory\',TIMEZONE=\'America/Chicago\',g >/tmp/filename"
+exec-command "mv /tmp/filename /mnt/gentoo/etc/conf.d/hwclock"
+exec-command "cat /mnt/gentoo/boot/grub/grub.conf | sed -e s,.ernel-g.*-r.,vmlinuz,g -e s,.nitra.*-r.,initrd.img,g >/tmp/filename"
 exec-command 'mv /tmp/filename /mnt/gentoo/boot/grub/grub.conf'
-exec-batch

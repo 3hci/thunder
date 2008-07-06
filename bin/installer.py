@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-import os, sys, re
+import os, sys, re, random
 from thunder import slurp
 
 class Thunder:
@@ -20,9 +20,7 @@ class Thunder:
 		self.slurp.register_trigger(args={'t_pattern': '^swapon.*', 't_callback': self.swapon})
 		self.slurp.register_trigger(args={'t_pattern': '^fetch-and-extract.*', 't_callback': self.fetch_and_extract})
 		self.slurp.register_trigger(args={'t_pattern': '^exec-command.*', 't_callback': self.exec_command})
-		self.slurp.register_trigger(args={'t_pattern': '^exec-batch.*', 't_callback': self.exec_batch})
 		self.slurp.register_trigger(args={'t_pattern': '^chroot-command.*', 't_callback': self.chroot_command})
-		self.slurp.register_trigger(args={'t_pattern': '^chroot-batch.*', 't_callback': self.chroot_batch})
 		fp = open(file, 'r')
 		self.slurp.run(fp)
 
@@ -75,7 +73,7 @@ class Thunder:
 		line = tmp.split()
 		disk = line[1]
 		self._exec_cmd('dd if=/dev/zero of=%s bs=512K count=1' % disk)
-		sys.stdout.write('[X] Clearing partitions\n')
+		sys.stdout.write('[+] Clearing partitions\n')
 		sys.stdout.write('[ ] Adding partitions: ')
 		sys.stdout.flush()
 		return
@@ -108,7 +106,7 @@ class Thunder:
 				fp.write(b+'\n')
 		fp.close()
 		self._exec_cmd('cat /tmp/partitions | /sbin/sfdisk -uM /dev/hda')
-		sys.stdout.write('\r[X]')
+		sys.stdout.write('\r[+]')
 		print ''
 		return
 
@@ -126,14 +124,14 @@ class Thunder:
 			t = re.sub('\"', '', args)
 			args = t
 			if self._which('mkfs.%s' % type) != False:
-				cmd = 'mkfs.%s -L %s %s %s' % (type, labl, args, part)
+				cmd = 'mkfs.%s -L %s %s %s' % (type, labl, re.sub("'", "", args), part)
 		else:
 			if self._which('mkswap') != False:
 				cmd = 'mkswap -L %s %s' % (labl, part)
 		sys.stdout.write('[ ] Formatting %s as %s\r' % (part,type))
 		sys.stdout.flush()
 		self._exec_cmd(cmd)
-		sys.stdout.write('\r[X]\n')
+		sys.stdout.write('\r[+]\n')
 		return
 
 	def mount_partition(self, txt):
@@ -152,6 +150,8 @@ class Thunder:
 				opts = opts+i+' '
 			t = re.sub('\"','',opts)
 			opts = t
+			t = re.sub("'", '', opts)
+			opts = t
 			gen = 1
 		elif len(line) == 3:
 			who = line[0]
@@ -163,10 +163,10 @@ class Thunder:
 			if line[0] == 'proc':
 				cmd = cmd+'-t proc proc %s' % line[1]
 				if os.path.isdir(line[1]) == False:
-					cmd = 'mkdir %s && sleep 1' % line[1]
+					self._exec_cmd('mkdir %s && sleep 1' % line[1])
 				who = 'proc'
 				where = line[1]
-
+		
 		if gen == 1:
 			if len(line) == 3:
 				if what == 'auto':
@@ -182,11 +182,11 @@ class Thunder:
 					else:
 						cmd = cmd+'-o %s %s %s' % (opts, who, where)
 			if os.path.isdir(where) == False:
-				cmd = 'mkdir %s && sleep 1' % where
+				self._exec_cmd('mkdir %s && sleep 1' % where)
 		sys.stdout.write('[ ] Mounting %s on %s' % (who, where))
 		sys.stdout.flush()
-		self._exec_cmd(cmd[1:][:-1])
-		sys.stdout.write('\r[X]')
+		self._exec_cmd(cmd)
+		sys.stdout.write('\r[+]')
 		print ''
 		return
 
@@ -199,7 +199,7 @@ class Thunder:
 				sys.stdout.write('[ ] Activating swap on %s' % i)
 				sys.stdout.flush()
 				self._exec_cmd(cmd)
-				sys.stdout.write('\r[X]\n')
+				sys.stdout.write('\r[+]\n')
 		return
 
 	def fetch_and_extract(self, txt):
@@ -219,27 +219,31 @@ class Thunder:
 		sys.stdout.write('[ ] Fetching %s' % os.path.basename(uri))
 		sys.stdout.flush()
 		self._exec_cmd('wget -c %s' % uri)
-		sys.stdout.write('\r[X]\n')
+		sys.stdout.write('\r[+]\n')
 		sys.stdout.write('[ ] Extracting into %s' % lcation)
 		sys.stdout.flush()
 		self._exec_cmd('tar %s %s -C %s' % (args, archive, lcation))
-		sys.stdout.write('\r[X]\n')
+		sys.stdout.write('\r[+]\n')
 		return
 
 	def exec_command(self, txt):
-		line = self._chk_subs(txt)
-		self.host_commands.append('/bin/bash -c %s' % line[13:])
-		return
-
-	def exec_batch(self, txt):
-		sys.stdout.write('[ ] Running commands')
+		ln_t = self._chk_subs(txt).split()
+		ln_t.pop(0)
+		li_t = ''
+		for i in ln_t: li_t = li_t+i+' '
+		if li_t[1].isalpha() == False and li_t[len(li_t)-1].isalpha() == False:
+			line = li_t[1:][:-1]
+		elif li_t[1].isalpha() == False and li_t[len(li_t)-1].isalpha() == True:
+			line = li_t[1:]
+		elif li_t[1].isalpha() == True and li_t[len(li_t)-1].isalpha() == False:
+			line = li_t[:-1]
+		else: line = li_t
+		sys.stdout.write('[ ] %s ... ' % line[:55])
 		sys.stdout.flush()
-		fp = open('/tmp/commands.sh', 'w+')
-		for i in self.host_commands:
-			fp.write(re.sub('"', '\\\"', i)+'\n')
-		self._exec_cmd('cat /tmp/commands.sh | /bin/bash')
-		sys.stdout.write('\r[X] Executed script, it was hopefully successful, I didn\'t check.\n')
-		self.host_commands = []
+		ret = 0#os.system(line)
+		if ret == 0: sys.stdout.write('\r[+] %s ... \n' % line[:55])
+		else: sys.stdout.write('\r[X] %s ... \n' % line[:55])
+		sys.stdout.flush()
 		return
 
 	def chroot_command(self, txt):
@@ -257,20 +261,20 @@ class Thunder:
 		sys.stdout.write('[ ] Executing commands in chroot.')
 		sys.stdout.flush()
 		fp = open('%s/chroot-commands.sh' % chroot, 'w+')
-		fp.write('#!/bin/bash\n')
+		fp.write('#!/bin/bash -x\n')
 		for i in self.chroot_commands:
 			line = i[1:][:-2]
 			fp.write(line+'\n')
 		self._exec_cmd('chmod +x %s/chroot-commands.sh' % chroot)
 		self._exec_cmd('chroot %s ./chroot-commands.sh' % chroot)
-		sys.stdout.write('\r[X]\n')
+		sys.stdout.write('\r[+]\n')
 		self.chroot_commands = []
 		return
 
 	def _exec_cmd(self, cmd):
 		self.cmd_log.write('%s &>/tmp/%s.log\n' % (cmd, cmd.split()[0]))
 		self.cmd_log.flush()
-		os.system('%s &>/tmp/%s.log' % (cmd, cmd.split()[0]))
+		#os.system('%s &>/tmp/%s.log' % (cmd, cmd.split()[0]))
 		return
 
 	def _chk_subs(self, txt):
