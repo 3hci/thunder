@@ -2,7 +2,7 @@
 from distutils.core import setup
 setup(name='thunder',
       version='0.1.0',
-      py_modules=['thunder/__init__', 'thunder/slurp'],
+      py_modules=['thunder/__init__', 'thunder/slurp', 'thunder/net'],
 	  data_files=[('/sbin/', ['bin/installer.py']), ('/etc', ['etc/install.th'])]
       )
 
