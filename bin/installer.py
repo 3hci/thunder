@@ -89,7 +89,50 @@ class Thunder:
 		return
 
 	def mount_partition(self, txt):
-		print self._chk_subs(txt)
+#mount-partition /dev/hda1 auto /mnt/gentoo/boot 
+#mount-partition proc /mnt/gentoo/proc 
+#mount-partition /sys none /mnt/gentoo/sys "bind" 
+		line = self._chk_subs(txt).split()
+		line.pop(0)
+		cmd = 'mount '
+		if len(line) > 3:
+			who = line[0]
+			line.pop(0)
+			what = line[0]
+			line.pop(0)
+			where = line[0]
+			line.pop(0)
+			opts = ''
+			for i in line:
+				opts = opts+i+' '
+			t = re.sub('\"','',opts)
+			opts = t
+			gen = 1
+		elif len(line) == 3:
+			who = line[0]
+			what = line[1]
+			where = line[2]
+			gen = 1
+		elif len(line) == 2:
+			gen = 0
+			if line[0] == 'proc':
+				cmd = cmd+'-t proc none %s' % line[1]
+
+		if gen == 1:
+			if len(line) == 3:
+				if what == 'auto':
+					cmd = cmd+'%s %s' % (who, where)
+				else:
+					cmd = cmd+'-t %s %s %s' % (what, who, where)
+			else:
+				if what == 'auto':
+					cmd = cmd+'-o %s %s %s' % (opts, who, where)
+				else:
+					if what != 'none':
+						cmd = cmd+'-o %s -t %s %s %s' % (opts, what, who, where)
+					else:
+						cmd = cmd+'-o %s %s %s' % (opts, who, where)
+		print cmd
 		return
 
 	def fetch_and_extract(self, txt):
@@ -143,9 +186,10 @@ class Thunder:
 	
 	def _which(self, prog):
 		for path in os.getenv('PATH').split(':'):
-			for file in os.listdir(path):
-				if file == prog:
-					return os.path.join(path, file) 
+			if os.path.isdir(path):
+				for file in os.listdir(path):
+					if file == prog:
+						return os.path.join(path, file) 
 		return False
 
 
