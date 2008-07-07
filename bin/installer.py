@@ -1,5 +1,6 @@
 #!/usr/bin/env python
-import os, sys, re, random
+import os, sys, re
+import time, random
 from thunder import slurp
 
 class Thunder:
@@ -21,6 +22,7 @@ class Thunder:
 		self.slurp.register_trigger(args={'t_pattern': '^fetch-and-extract.*', 't_callback': self.fetch_and_extract})
 		self.slurp.register_trigger(args={'t_pattern': '^exec-command.*', 't_callback': self.exec_command})
 		self.slurp.register_trigger(args={'t_pattern': '^chroot-command.*', 't_callback': self.chroot_command})
+		self.slurp.register_trigger(args={'t_pattern': '^chroot-batch.*', 't_callback': self.chroot_batch})
 		fp = open(file, 'r')
 		self.slurp.run(fp)
 
@@ -232,11 +234,11 @@ class Thunder:
 		li_t = ''
 		for i in ln_t: li_t = li_t+i+' '
 		if li_t[0].isalpha() == False and li_t[len(li_t)-1].isalpha() == False:
-			line = li_t[1:][:-1]
+			line = li_t.strip()[1:][:-1]
 		elif li_t[0].isalpha() == False and li_t[len(li_t)-1].isalpha() == True:
 			line = li_t[1:]
 		elif li_t[0].isalpha() == True and li_t[len(li_t)-1].isalpha() == False:
-			line = li_t[:-1]
+			line = li_t.strip()[:-1]
 		else: line = li_t
 		sys.stdout.write('[ ] %s ... ' % line[:55])
 		sys.stdout.flush()
@@ -266,6 +268,8 @@ class Thunder:
 			line = i[1:][:-2]
 			fp.write(line+'\n')
 		self._exec_cmd('chmod +x %s/chroot-commands.sh' % chroot)
+		fp.close()
+		time.sleep(1)
 		self._exec_cmd('chroot %s ./chroot-commands.sh' % chroot)
 		sys.stdout.write('\r[+]\n')
 		self.chroot_commands = []
