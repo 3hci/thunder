@@ -76,7 +76,6 @@ class Thunder:
 		disk = line[1]
 		self._exec_cmd('dd if=/dev/zero of=%s bs=512K count=1' % disk)
 		sys.stdout.write('[+] Clearing partitions\n')
-		sys.stdout.write('[ ] Adding partitions: ')
 		sys.stdout.flush()
 		return
 
@@ -102,14 +101,15 @@ class Thunder:
 		return
 
 	def commit_partitions(self, txt):
-		fp = open('/tmp/partitions', 'w+')
 		for i in self.partitions.keys():
+			sys.stdout.write('[ ] Partitioning %s' % i)
+			sys.stdout.flush()
+			fp = open('/tmp/partitions', 'w+')
 			for b in self.partitions[i]:
 				fp.write(b+'\n')
-		fp.close()
-		self._exec_cmd('cat /tmp/partitions | /sbin/sfdisk -uM /dev/hda')
-		sys.stdout.write('\r[+]')
-		print ''
+			fp.close()
+			self._exec_cmd('cat /tmp/partitions | /sbin/sfdisk -uM /dev/hda')
+			sys.stdout.write('\r[+]')
 		return
 
 	def format_partition(self, txt):
