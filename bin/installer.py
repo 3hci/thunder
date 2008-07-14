@@ -91,17 +91,11 @@ class Thunder:
 		return
 
 	def format_partition(self, txt):
-		try:
-			line = self._chk_subs(txt).split()
-			line.pop(0)
-			part = line[0]
-			labl = line[1].upper()
-			type = line[2]
-		except IndexError:
-			line = self._chk_subs(txt).split()
-			line.pop(0)
-			part = line[0]
-			type = line[1]
+		line = self._chk_subs(txt).split()
+		line.pop(0)
+		part = line[0]
+		labl = line[1].upper()
+		type = line[2]
 			
 		if len(line) > 0:
 			args = ''
@@ -113,7 +107,7 @@ class Thunder:
 				print 'mkfs.%s -L %s %s %s' % (type, labl, args, part)
 		else:
 			if self._which('mkswap') != False:
-				print 'mkswap %s' % part
+				print 'mkswap -L %s %s' % (labl, part)
 		return
 
 	def mount_partition(self, txt):
@@ -201,9 +195,8 @@ class Thunder:
 
 	def chroot_command(self, txt):
 		tmp = self._chk_subs(txt)
-		chroot = tmp.split()[1]
+		tmp = tmp.split()
 		line = tmp.split()
-		line.pop(0)
 		line.pop(0)
 		script = ''
 		for i in line: script = script+i+' '

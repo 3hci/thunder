@@ -8,10 +8,8 @@ set c_root /mnt/gentoo/etc/conf.d
 # detect our disk, don't really care one way or another if the second
 # is there or not.
 #
-# [command] [prefer|accept] <disk type> [prefer|accept] <disk type>
-# Supported types: sd, hd
-#
-detect-disks prefer sd accept hd
+#  command      mand  
+detect-disks 	prefer 	sd accept hd
 #
 # auto partition our shit
 #
@@ -31,10 +29,11 @@ commit-partitions
 #
 # [command] <name(reference above> <fs type> [<optional args to relevant mkfs.*>]
 #
-format-partition %boot boot ext2 "-m 0"
-format-partition %swap swap
-format-partition %root root ext3 "-m 0 -J size=100"
-format-partition %data root ext3 "-m 0 -J size=100"
+#   commandi     	disk  	label	type	 args
+format-partition 	%boot 	boot 	ext2	 "-m 0"
+format-partition 	%swap 	swap	swap	
+format-partition 	%root 	root 	ext3	 "-m 0 -J size=100"
+format-partition 	%data 	root 	ext3	 "-m 0 -J size=100"
 #
 # Mount our partitions
 #
@@ -66,8 +65,14 @@ exec-command "cat /mnt/gentoo/etc/conf.d/hostname | sed s,localhost,myhostname,g
 exec-command "mv /tmp/filename /mnt/gentoo/etc/conf.d/hostname"
 exec-command "echo 'config_eth0=\"192.168.10.210 netmask 255.255.255.0\"' > /mnt/gentoo/etc/conf.d/net"
 exec-command "echo 'routes_eth0=\"default via 192.168.10.254\"' >> /mnt/gentoo/etc/conf.d/net"
-exec-command "echo 'SYNC=\"rsync://srvcs.thwap.org/portage/\" >> /mnt/gentoo/etc/make.conf"
-exec-command
+exec-command "echo 'SYNC=\"rsync://srvcs.thwap.org/portage/\"' >> /mnt/gentoo/etc/make.conf"
+exec-command "echo 'PORTDIR_OVERLAY=\"/usr/local/portage\"' >>/mnt/gentoo/etc/make.conf"
+exec-command "echo 'PORTAGE_BINHOST=\"ftp://srvrs:b1nh05+!@srvcs.thwap.org/All/\"' >>/mnt/gentoo/etc/make.conf"
+exec-command "echo 'EMERGE_DEFAULT_OPTS=\"-avbuDg\"' >>/mnt/gentoo/etc/make.conf"
+exec-command "echo 'ACCEPT_KEYWORDS=\"~x86\"' >>/mnt/gentoo/etc/make.conf"
+exec-command "echo 'FEATURES=\"distcc parallel-fetch\"' >>/mnt/gentoo/etc/make.conf"
+exec-command "ln -s /mnt/gentoo/usr/share/zoneinfo/CST6CDT /mnt/gentoo/etc/localtime"
+exec-command "echo '"
 exec-batch
 #
 # We have the ability to run commands inside the chroot
@@ -75,17 +80,23 @@ exec-batch
 #
 # [command] <chroot directory> <"commands to be run (note: make sure they are in double quotes">
 #
-chroot-command %e_root "emerge --sync"
-chroot-command %e_root "EMERGE_DEFAULT_OPTS=\"-avb1\" emerge portage"
-chroot-command %e_root "emerge vixie-cron syslog-ng gentoolkit gentoo-sources genkernel grub"
-chroot-command %e_root "for i in vixie-cron syslog-ng sshd; do rc-update add $i default; done"
-chroot-command %e_root "for i in net.eth0 ntp-client; do rc-update add $i boot; done"
-chroot-command %e_root "cd /usr/src/linux && zcat /proc/config.gz > /usr/src/linux/config"
-chroot-command %e_root "genkernel --kernel-config=config --lvm all"
-chroot-command %e_root "grub-install %drive0 "
-chroot-command %e_root "echo root:changeme | chpasswd"
+chroot-command "emerge --sync"
+chroot-command "EMERGE_DEFAULT_OPTS=\"-vb1\" emerge portage"
+chroot-command "emerge vixie-cron syslog-ng gentoolkit gentoo-sources genkernel grub ntp"
+chroot-command "for i in vixie-cron syslog-ng sshd; do rc-update add $i default; done"
+chroot-command "for i in net.eth0 ntp-client; do rc-update add $i boot; done"
+chroot-command "cd /usr/src/linux && zcat /proc/config.gz > /usr/src/linux/config"
+chroot-command "genkernel --kernel-config=config --lvm all"
+chroot-command "ln -s /boot/kernel-genkernel* /boot/vmlinuz"
+chroot-command "ln -s /boot/initramfs-* /boot/initrd.img"
+chroot-command "grub-install %drive0 "
+chroot-command "echo root:changeme | chpasswd"
+chroot-command "EMERGE_DEFAULT_OPTS=\"-vbuD\" emerge world" 
 chroot-batch %e_root
 #
 # bite it off
 #
-exec-command "echo "
+exec-command "cat /mnt/gentoo/etc/conf.d/hwclock | sed s,#TIMEZONE=\"Factory\",TIMEZONE=\"America/Chicago\",g >/tmp/filename"
+exec-command "mv /tmp/filename /mnt/gentoo/etc/conf.d/hwclock"
+exec-command "cat /mnt/gentoo/boot/grub/grub.conf | sed -e s,.ernel-g.*-r.,vmlinuz,g -e s,.nitra.*-r.,initrd.img,g >/tmp/filename"
+exec-command "mv /tmp/filename /mnt/gentoo/boot/grub/grub.conf"
