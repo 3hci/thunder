@@ -71,3 +71,4 @@ exec-command "mv /tmp/filename /mnt/gentoo/etc/conf.d/hostname"
 #
 chroot-command %e_root "emerge --sync"
 chroot-command %e_root "emerge vixie-cron syslog-ng gentoolkit gentoo-sources genkernel grub"
+
