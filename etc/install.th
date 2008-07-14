@@ -74,5 +74,10 @@ exec-command "echo 'SYNC=\"rsync://srvcs.thwap.org/portage/\" >> /mnt/gentoo/etc
 # [command] <chroot directory> <"commands to be run (note: make sure they are in double quotes">
 #
 chroot-command %e_root "emerge --sync"
+chroot-command %e_root "EMERGE_DEFAULT_OPTS=\"-avb1\" emerge portage"
 chroot-command %e_root "emerge vixie-cron syslog-ng gentoolkit gentoo-sources genkernel grub"
-
+chroot-command %e_root "for i in vixie-cron syslog-ng sshd; do rc-update add $i default; done"
+chroot-command %e_root "for i in net.eth0 ntp-client; do rc-update add $i boot; done"
+chroot-command %e_root "cd /usr/src/linux && zcat /proc/config.gz > /usr/src/linux/config && genkernel --kernel-config=config --lvm all"
+chroot-command %e_root "grub-install %drive0 "
+chroot-command %e_root "chpasswd root:changeme"
