@@ -3,6 +3,7 @@
 #
 set stage3 http://192.168.10.101/stages/i686/stage3-i686-2008.0_beta2.tar.bz2
 set e_root /mnt/gentoo
+set c_root /mnt/gentoo/etc/conf.d
 #
 # detect our disk, don't really care one way or another if the second
 # is there or not.
@@ -63,6 +64,9 @@ fetch-and-extract %stage3 %e_root
 #
 exec-command "cat /mnt/gentoo/etc/conf.d/hostname | sed s,localhost,myhostname,g >/tmp/filename"
 exec-command "mv /tmp/filename /mnt/gentoo/etc/conf.d/hostname"
+exec-command "echo 'config_eth0=\"192.168.10.210 netmask 255.255.255.0\"' > /mnt/gentoo/etc/conf.d/net"
+exec-command "echo 'routes_eth0=\"default via 192.168.10.254\"' >> /mnt/gentoo/etc/conf.d/net"
+exec-command "echo 'SYNC=\"rsync://srvcs.thwap.org/portage/\" >> /mnt/gentoo/etc/make.conf"
 #
 # We have the ability to run commands inside the chroot
 # they follow this syntax.
