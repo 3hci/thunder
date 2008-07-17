@@ -60,6 +60,7 @@ exec-command "echo 'PORTAGE_BINHOST="ftp://srvrs:b1nh05+!@srvcs.thwap.org/All/"'
 exec-command "echo 'EMERGE_DEFAULT_OPTS="-vbuDg"' >>/mnt/gentoo/etc/make.conf"
 exec-command "echo 'ACCEPT_KEYWORDS="~x86"' >>/mnt/gentoo/etc/make.conf"
 exec-command "echo 'FEATURES="distcc parallel-fetch"' >>/mnt/gentoo/etc/make.conf"
+exec-command "rm -f /mnt/gentoo/etc/localtime"
 exec-command "ln -s /mnt/gentoo/usr/share/zoneinfo/CST6CDT /mnt/gentoo/etc/localtime"
 exec-command "echo 'search thwap.org' >/mnt/gentoo/etc/resolv.conf"
 exec-command "echo 'nameserver 192.168.10.101' >>/mnt/gentoo/etc/resolv.conf"
