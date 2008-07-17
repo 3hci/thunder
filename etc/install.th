@@ -15,9 +15,11 @@ detect-disks 	prefer 	sd accept hd
 #
 # 
 clear-partitions %drive0
+clear-partitions %drive1
 partition-disk %drive0 primary 1 boot 100 83
 partition-disk %drive0 primary 2 swap 2024 82
-partition-disk %drive0 primary 3 root all 83
+partition-disk %drive0 primary 3 root 4096 83
+partition-disk %drive1 primary 1 data 4096 83
 commit-partitions
 #
 # Format our partitions
@@ -26,7 +28,7 @@ commit-partitions
 format-partition 	%boot 	boot 	ext2	 '-m 0'
 format-partition 	%swap 	swap	swap	
 format-partition 	%root 	root 	ext3	 '-m 0 -J size=100'
-#format-partition 	%data 	root 	ext3	 '-m 0 -J size=100'
+format-partition 	%data 	data 	ext3	 '-m 0 -J size=100'
 #
 # Mount our partitions
 #
@@ -34,6 +36,7 @@ format-partition 	%root 	root 	ext3	 '-m 0 -J size=100'
 mount-partition %root ext3 /mnt/gentoo
 mount-partition %boot ext2 /mnt/gentoo/boot
 mount-partition %none proc /mnt/gentoo/proc
+mount-partition %data ext3 /mnt/gentoo/data
 mount-partition /sys none /mnt/gentoo/sys 'bind'
 #
 # Activate swap

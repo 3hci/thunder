@@ -75,7 +75,7 @@ class Thunder:
 		line = tmp.split()
 		disk = line[1]
 		self._exec_cmd('dd if=/dev/zero of=%s bs=512K count=1' % disk)
-		sys.stdout.write('[+] Clearing partitions\n')
+		sys.stdout.write('[+] Clearing partition table on %s\n' % disk)
 		sys.stdout.flush()
 		return
 
@@ -110,6 +110,7 @@ class Thunder:
 			fp.close()
 			self._exec_cmd('cat /tmp/partitions | /sbin/sfdisk -uM /dev/hda')
 			sys.stdout.write('\r[+]')
+			print ''
 		return
 
 	def format_partition(self, txt):
