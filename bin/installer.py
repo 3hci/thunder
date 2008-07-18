@@ -90,18 +90,18 @@ class Thunder:
 			if opts[5] != 'all': psze = opts[5]
 			if opts[5] == 'all': psze = ''
 			ptyp = opts[6]
-			sys.stdout.write('%s%s ' % (dev,pnum))
 			self.th_vars.append((pnam, '%s%s' % (dev,pnum)))
 			self.partitions[os.path.basename(dev)].append(',%s,%s' % (psze,ptyp))
 		elif type == 'extended':
 			if opts[3] != 'all': psze = opts[3]
 			else: psze = ''
-			sys.stdout.write('swap ')
 			self.partitions[os.path.basename(dev)].append(',%s,E' % psze)
 		return
 
 	def commit_partitions(self, txt):
-		for i in self.partitions.keys():
+		kys = self.partitions.keys()
+		kys.sort()
+		for i in kys:
 			sys.stdout.write('[ ] Partitioning %s' % i)
 			sys.stdout.flush()
 			fp = open('/tmp/partitions', 'w+')
