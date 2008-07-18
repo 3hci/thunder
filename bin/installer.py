@@ -8,23 +8,26 @@ from thunder import net
 class Thunder:
 	def __init__(self, file):
 		self.cmd_log = open('/tmp/thunder.log', 'w+')
+		self.handler_map = [
+			('^set.*', self.set), ('^detect-disks.*', self.detect_disks),
+			('^clear-partitions.*', self.clear_partitions),
+			('^partition-disk.*', self.partition_disk),	
+			('^commit-partitions.*', self.commit_partitions),
+			('^format-partition.*', self.format_partition),
+			('^mount-partition.*', self.mount_partition),
+			('^swapon.*', self.swapon), ('^exec-command.*', self.exec_command),
+			('^fetch-and-extract.*', self.fetch_and_extract),
+			('^chroot-command.*', self.chroot_command),
+			('^chroot-batch.*', self.chroot_batch)
+		]
 		self.slurp = slurp.Proc()
 		self.th_vars = []
 		self.partitions = {} 
 		self.host_commands = []
 		self.chroot_commands = []
-		self.slurp.register_trigger(args={'t_pattern': '^set.*', 't_callback': self.set})
-		self.slurp.register_trigger(args={'t_pattern': '^detect-disks.*', 't_callback': self.detect_disks})
-		self.slurp.register_trigger(args={'t_pattern': '^clear-partitions.*', 't_callback': self.clear_partitions})
-		self.slurp.register_trigger(args={'t_pattern': '^partition-disk.*', 't_callback': self.partition_disk})
-		self.slurp.register_trigger(args={'t_pattern': '^commit-partitions.*', 't_callback': self.commit_partitions})
-		self.slurp.register_trigger(args={'t_pattern': '^format-partition.*', 't_callback': self.format_partition})
-		self.slurp.register_trigger(args={'t_pattern': '^mount-partition.*', 't_callback': self.mount_partition})
-		self.slurp.register_trigger(args={'t_pattern': '^swapon.*', 't_callback': self.swapon})
-		self.slurp.register_trigger(args={'t_pattern': '^fetch-and-extract.*', 't_callback': self.fetch_and_extract})
-		self.slurp.register_trigger(args={'t_pattern': '^exec-command.*', 't_callback': self.exec_command})
-		self.slurp.register_trigger(args={'t_pattern': '^chroot-command.*', 't_callback': self.chroot_command})
-		self.slurp.register_trigger(args={'t_pattern': '^chroot-batch.*', 't_callback': self.chroot_batch})
+		for i in self.handler_map:
+			(pat, cback) = i
+			self.slurp.register_trigger(args={'t_pattern': pat, 't_callback': cback})
 		fp = open(file, 'r')
 		self.slurp.run(fp)
 
