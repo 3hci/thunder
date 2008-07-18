@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 import os, sys, re
 import time, random
+import popen2
 from thunder import slurp
 from thunder import net
 
@@ -103,15 +104,16 @@ class Thunder:
 		kys = self.partitions.keys()
 		kys.sort()
 		for i in kys:
-			sys.stdout.write('[ ] Partitioning %s' % i)
-			sys.stdout.flush()
-			fp = open('/tmp/partitions', 'w+')
-			for b in self.partitions[i]:
-				fp.write(b+'\n')
-			fp.close()
-			self._exec_cmd('cat /tmp/partitions | /sbin/sfdisk -uM /dev/hda')
-			sys.stdout.write('\r[+]')
-			print ''
+			if self.partitions[i] != []:
+				sys.stdout.write('[ ] Partitioning %s' % i)
+				sys.stdout.flush()
+				fp = open('/tmp/partitions', 'w+')
+				for b in self.partitions[i]:
+					fp.write(b+'\n')
+				fp.close()
+				self._exec_cmd('cat /tmp/partitions | /sbin/sfdisk -uM /dev/%s' % i)
+				sys.stdout.write('\r[+]')
+				print ''
 		return
 
 	def format_partition(self, txt):
@@ -239,12 +241,7 @@ class Thunder:
 		elif li_t[0].isalpha() == True and li_t[len(li_t)-1].isalpha() == False:
 			line = li_t.strip()[:-1]
 		else: line = li_t
-		sys.stdout.write('[ ] %s ... ' % line[:55])
-		sys.stdout.flush()
-		ret = os.system(line)
-		if ret == 0: sys.stdout.write('\r[+] %s ... \n' % line[:55])
-		else: sys.stdout.write('\r[X] %s ... \n' % line[:55])
-		sys.stdout.flush()
+		self._exec_cmd(line, flag=0)
 		return
 
 	def chroot_command(self, txt):
@@ -274,10 +271,21 @@ class Thunder:
 		self.chroot_commands = []
 		return
 
-	def _exec_cmd(self, cmd):
-		self.cmd_log.write('%s &>/tmp/%s.log\n' % (cmd, cmd.split()[0]))
-		self.cmd_log.flush()
-		os.system('%s &>/tmp/%s.log' % (cmd, cmd.split()[0]))
+	def _exec_cmd(self, cmd, flag=1):
+		line = self._chk_subs(cmd)
+		if flag != 1: sys.stdout.write('[ ]  %s...' % line[:55])
+		if flag != 1: self.cmd_log.write('\n## THUNDER: exec-command\n%s\n' % line)
+		else: self.cmd_log.write('%s\n' % line)
+		pipe = popen2.Popen4(line)
+		buff = pipe.fromchild.readline()
+		while buff != '':
+			self.cmd_log.write(buff.strip()+'\n')
+			buff = pipe.fromchild.readline()
+		if pipe.poll() > 0:
+			sys.stdout.write('\r[X] Error while running command:\n%s...\n' % line)
+			sys.exit(255)
+		else:
+			if flag != 1: sys.stdout.write('\r[+] %s...\n' % line[:55])
 		return
 
 	def _chk_subs(self, txt):

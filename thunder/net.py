@@ -12,10 +12,13 @@ class Fetch:
 				data_s += int(len(data))
 				sys.stdout.write('\r[ ] Fetching %s: %d%%' % (os.path.basename(uri), int((float(data_s)/float(data_t))*100)))
 				sys.stdout.flush()
+				fp.write(data)
 				data = handle.read(40960)
-			print ''
+			fp.close()
+			sys.stdout.write('\r[+] Fetching %s: 100%%\n' % (os.path.basename(uri)))
+			sys.stdout.flush()
 		except urllib2.HTTPError:
-			sys.stdout.write('[ERROR]: %s' % 'error')
+			sys.stdout.write('\r[X] Fetching %s: ERROR\n' % (os.path.basename(uri)))
 			sys.stdout.flush()
 			sys.exit(-1)
 		return None
