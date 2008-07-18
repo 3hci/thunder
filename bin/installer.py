@@ -226,10 +226,10 @@ class Thunder:
 		if archive[-2:] == 'z2': args = '-jxf'
 		if archive[-2:] == 'gz': args = '-zxf'
 		tmp = net.Fetch(uri)
-		sys.stdout.write('[ ] Extracting into %s' % lcation)
-		sys.stdout.flush()
-		self._exec_cmd('tar %s %s -C %s' % (args, archive, lcation))
-		sys.stdout.write('\r[+]\n')
+		#sys.stdout.write('[ ] Extracting into %s' % lcation)
+		#sys.stdout.flush()
+		#self._exec_cmd('tar %s %s -C %s' % (args, archive, lcation))
+		#sys.stdout.write('\r[+]\n')
 		return
 
 	def exec_command(self, txt):
