@@ -1,92 +1,83 @@
-#
-# Some runtime settings
-#
-set stage3 ftp://sysinst:install@srvcs.thwap.org/stage3-i686-2008.0.tar.bz2
-set e_root /mnt/gentoo
-set c_root /mnt/gentoo/etc/conf.d
-#
-# detect our disk, don't really care one way or another if the second
-# is there or not.
-#
-#  command      mand  
-detect-disks 	prefer 	sd accept hd
-#
-# auto partition our shit
-#
-# 
-clear-partitions %drive0
-clear-partitions %drive1
-partition-disk %drive0 primary 1 boot 100 83
-partition-disk %drive0 primary 2 swap 2024 82
-partition-disk %drive0 primary 3 root 4096 83
-partition-disk %drive1 primary 1 data 4096 83
+# set:
+# cmd	name	value
+set 	stage3 	ftp://sysinst:install@srvcs.thwap.org/stage3-i686-2008.0.tar.bz2
+set 	e_root 	/mnt/gentoo
+set 	c_root 	/mnt/gentoo/etc/conf.d
+# detect-disks: 
+#### NOTES ####
+# ALL FIELDS ARE MANDATORY.
+# This command will create variables for you by the names of %driveN
+# after sorting the list of disks it detects.
+#  command      		BD			BD
+detect-disks 	prefer 	sd 	accept 	hd
+# clear-partitions:
+# command			drive
+clear-partitions 	%drive0
+clear-partitions 	%drive1
+# partition-disk
+#### NOTES ####
+# the svar field sets a variable to that name referencing the physical partition.
+# command		drive		pri/ext		#	svar	MB		type
+partition-disk 	%drive0 	primary 	1 	boot 	100 	83
+partition-disk 	%drive0 	primary 	2 	swap 	2024 	82
+partition-disk 	%drive0 	primary 	3 	root 	4096 	83
+partition-disk 	%drive1 	primary 	1 	data 	4096 	83
+# commit-partitions:
+# command
 commit-partitions
-#
-# Format our partitions
-#
+# format-partition:
+# #### NOTES ####
+# the label field gets uppercased and set as the fs label
 #   commandi     	disk  	label	type	 args
 format-partition 	%boot 	boot 	ext2	 '-m 0'
 format-partition 	%swap 	swap	swap	
 format-partition 	%root 	root 	ext3	 '-m 0 -J size=100'
 format-partition 	%data 	data 	ext3	 '-m 0 -J size=100'
-#
-# Mount our partitions
-#
-#
-mount-partition %root ext3 /mnt/gentoo
-mount-partition %boot ext2 /mnt/gentoo/boot
-mount-partition %none proc /mnt/gentoo/proc
-mount-partition %data ext3 /mnt/gentoo/data
-mount-partition /sys none /mnt/gentoo/sys 'bind'
-#
-# Activate swap
-#
-#
-swapon %swap
-#
-# Fetch our stage tarball, extract our stage tarball
-#
-#
-fetch-and-extract %stage3 %e_root
-#
-# We have the ability to exec commands on the host, this lets us
-# make edits to files inside our installation root
-#
-#
-exec-command "cat /mnt/gentoo/etc/conf.d/hostname | sed s,localhost,myhostname,g >/tmp/filename"
-exec-command "mv /tmp/filename /mnt/gentoo/etc/conf.d/hostname"
-exec-command "echo 'config_eth0="192.168.10.210 netmask 255.255.255.0"' > /mnt/gentoo/etc/conf.d/net"
-exec-command "echo 'routes_eth0="default via 192.168.10.254"' >> /mnt/gentoo/etc/conf.d/net"
-exec-command "echo 'SYNC="rsync://srvcs.thwap.org/portage/"' >> /mnt/gentoo/etc/make.conf"
-exec-command "echo 'PORTDIR_OVERLAY="/usr/local/portage"' >>/mnt/gentoo/etc/make.conf"
-exec-command "echo 'PORTAGE_BINHOST="ftp://srvrs:b1nh05+!@srvcs.thwap.org/All/"' >>/mnt/gentoo/etc/make.conf"
-exec-command "echo 'EMERGE_DEFAULT_OPTS="-vbuDg"' >>/mnt/gentoo/etc/make.conf"
-exec-command "echo 'ACCEPT_KEYWORDS="~x86"' >>/mnt/gentoo/etc/make.conf"
-exec-command "echo 'FEATURES="distcc parallel-fetch"' >>/mnt/gentoo/etc/make.conf"
-exec-command "rm -f /mnt/gentoo/etc/localtime"
-exec-command "ln -s /mnt/gentoo/usr/share/zoneinfo/CST6CDT /mnt/gentoo/etc/localtime"
-exec-command "echo 'search thwap.org' >/mnt/gentoo/etc/resolv.conf"
-exec-command "echo 'nameserver 192.168.10.101' >>/mnt/gentoo/etc/resolv.conf"
-#
-# We have the ability to run commands inside the chroot
-# they follow this syntax.
-#
-#
-chroot-command 'emerge --sync'
-chroot-command 'EMERGE_DEFAULT_OPTS="-vb1" emerge portage'
-chroot-command 'emerge vixie-cron syslog-ng gentoolkit gentoo-sources genkernel grub ntp'
-chroot-command 'for i in vixie-cron syslog-ng sshd; do rc-update add $i default; done'
-chroot-command 'for i in net.eth0 ntp-client; do rc-update add $i boot; done'
-chroot-command 'cd /usr/src/linux && zcat /proc/config.gz > /usr/src/linux/config'
-chroot-command 'genkernel --kernel-config=config --lvm all'
-chroot-command 'ln -s /boot/kernel-genkernel* /boot/vmlinuz'
-chroot-command 'ln -s /boot/initramfs-* /boot/initrd.img'
-chroot-command 'grub-install %drive0 '
-chroot-command 'echo root:changeme | chpasswd'
-chroot-command 'EMERGE_DEFAULT_OPTS="-vbuD" emerge world' 
-chroot-batch %e_root
-#
-# bite it off
+# mount-partition:
+# command			what	type	where				options
+mount-partition 	%root 	ext3 	/mnt/gentoo
+mount-partition 	%boot 	ext2 	/mnt/gentoo/boot
+mount-partition 	%none 	proc 	/mnt/gentoo/proc
+mount-partition 	%data	ext3 	/mnt/gentoo/data
+mount-partition 	/sys 	none 	/mnt/gentoo/sys 	'bind'
+# swapon:
+# cmnd		device
+swapon 		%swap
+# fetch-and-extract:
+# command			URI			dest
+fetch-and-extract 	%stage3 	%e_root
+# exec-comamnd
+# command		command string
+exec-command 	"cat /mnt/gentoo/etc/conf.d/hostname | sed s,localhost,myhostname,g >/tmp/filename"
+exec-command 	"mv /tmp/filename /mnt/gentoo/etc/conf.d/hostname"
+exec-command 	"echo 'config_eth0="192.168.10.210 netmask 255.255.255.0"' > /mnt/gentoo/etc/conf.d/net"
+exec-command 	"echo 'routes_eth0="default via 192.168.10.254"' >> /mnt/gentoo/etc/conf.d/net"
+exec-command 	"echo 'SYNC="rsync://srvcs.thwap.org/portage/"' >> /mnt/gentoo/etc/make.conf"
+exec-command 	"echo 'PORTDIR_OVERLAY="/usr/local/portage"' >>/mnt/gentoo/etc/make.conf"
+exec-command 	"echo 'PORTAGE_BINHOST="ftp://srvrs:b1nh05+!@srvcs.thwap.org/All/"' >>/mnt/gentoo/etc/make.conf"
+exec-command 	"echo 'EMERGE_DEFAULT_OPTS="-vbuDg"' >>/mnt/gentoo/etc/make.conf"
+exec-command 	"echo 'ACCEPT_KEYWORDS="~x86"' >>/mnt/gentoo/etc/make.conf"
+exec-command 	"echo 'FEATURES="distcc parallel-fetch"' >>/mnt/gentoo/etc/make.conf"
+exec-command 	"rm -f /mnt/gentoo/etc/localtime"
+exec-command 	"ln -s /mnt/gentoo/usr/share/zoneinfo/CST6CDT /mnt/gentoo/etc/localtime"
+exec-command 	"echo 'search thwap.org' >/mnt/gentoo/etc/resolv.conf"
+exec-command 	"echo 'nameserver 192.168.10.101' >>/mnt/gentoo/etc/resolv.conf"
+# chroot-command:
+# command		command string
+chroot-command 	'emerge --sync'
+chroot-command 	'EMERGE_DEFAULT_OPTS="-vb1" emerge portage'
+chroot-command 	'EMERGE_DEFAULT_OPTS="-vbuDg" emerge vixie-cron syslog-ng gentoolkit gentoo-sources genkernel grub ntp'
+chroot-command 	'for i in vixie-cron syslog-ng sshd; do rc-update add $i default; done'
+chroot-command 	'for i in net.eth0 ntp-client; do rc-update add $i boot; done'
+chroot-command 	'cd /usr/src/linux && zcat /proc/config.gz > /usr/src/linux/config'
+chroot-command 	'genkernel --kernel-config=config --lvm all'
+chroot-command 	'ln -s /boot/kernel-genkernel* /boot/vmlinuz'
+chroot-command 	'ln -s /boot/initramfs-* /boot/initrd.img'
+chroot-command 	'grub-install %drive0 '
+chroot-command 	'echo root:changeme | chpasswd'
+# chroot-batch:
+# command	 	chroot
+chroot-batch 	%e_root
 #
 exec-command "cat /mnt/gentoo/etc/conf.d/hwclock | sed s,#TIMEZONE=\'Factory\',TIMEZONE=\'America/Chicago\',g >/tmp/filename"
 exec-command "mv /tmp/filename /mnt/gentoo/etc/conf.d/hwclock"
