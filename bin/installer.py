@@ -2,6 +2,7 @@
 import os, sys, re
 import time, random
 from thunder import slurp
+from thunder import net
 
 class Thunder:
 	def __init__(self, file):
@@ -208,7 +209,7 @@ class Thunder:
 	def fetch_and_extract(self, txt):
 		tmp = self._chk_subs(txt)
 		uri = tmp.split()[1]
-		archive = uri.split('/')[len(uri.split('/'))-1]
+		archive = os.path.basename(uri)
 		try: lcation = tmp.split()[2]
 		except: lcation = './'
 		if archive[0] == '%':
@@ -219,10 +220,7 @@ class Thunder:
 			lcation = lcation_t
 		if archive[-2:] == 'z2': args = '-jxf'
 		if archive[-2:] == 'gz': args = '-zxf'
-		sys.stdout.write('[ ] Fetching %s' % os.path.basename(uri))
-		sys.stdout.flush()
-		self._exec_cmd('wget -c %s' % uri)
-		sys.stdout.write('\r[+]\n')
+		tmp = net.Fetch(uri)
 		sys.stdout.write('[ ] Extracting into %s' % lcation)
 		sys.stdout.flush()
 		self._exec_cmd('tar %s %s -C %s' % (args, archive, lcation))
