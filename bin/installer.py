@@ -16,6 +16,7 @@ class Thunder:
 			('^format-partition.*', self.format_partition),
 			('^mount-partition.*', self.mount_partition),
 			('^swapon.*', self.swapon), ('^exec-command.*', self.exec_command),
+			('^fetch.*', self.fetch),
 			('^fetch-and-extract.*', self.fetch_and_extract),
 			('^chroot-command.*', self.chroot_command),
 			('^chroot-batch.*', self.chroot_batch)
@@ -211,6 +212,12 @@ class Thunder:
 				sys.stdout.write('\r[+]\n')
 		return
 
+	def fetch(self, txt):
+		tmp = self._chk_subs(txt)
+		uri = tmp.split()[1]
+		tmp = net.Fetch(uri)
+		return
+
 	def fetch_and_extract(self, txt):
 		tmp = self._chk_subs(txt)
 		uri = tmp.split()[1]
@@ -225,11 +232,7 @@ class Thunder:
 			lcation = lcation_t
 		if archive[-2:] == 'z2': args = '-jxf'
 		if archive[-2:] == 'gz': args = '-zxf'
-		tmp = net.Fetch(uri)
-		#sys.stdout.write('[ ] Extracting into %s' % lcation)
-		#sys.stdout.flush()
-		#self._exec_cmd('tar %s %s -C %s' % (args, archive, lcation))
-		#sys.stdout.write('\r[+]\n')
+		tmp = net.FandA(uri, lcation)
 		return
 
 	def exec_command(self, txt):
