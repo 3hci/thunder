@@ -1,7 +1,9 @@
 import os, urllib2, sys
-import popen2
+import popen2, types
 
-def Fetch(uri):
+def Fetch(uri='', watcher=None):
+	if type(uri) != types.StringType or uri == '' or watcher == None:
+		return False
 	try:	
 		handle = urllib2.urlopen(uri)
 		data_t = int(handle.info().items()[0][1])
@@ -10,20 +12,19 @@ def Fetch(uri):
 		fp = open(os.path.basename(uri), 'w+')
 		while data != '':
 			data_s += int(len(data))
-			sys.stdout.write('\r[ ] Fetching %s: %d%%' % (os.path.basename(uri),int((float(data_s)/float(data_t))*100)))
-			sys.stdout.flush()
+			watcher.logEvent('events', 'Fetching %s: %d%%' % (os.path.basename(uri),int((float(data_s)/float(data_t))*100)))
 			fp.write(data)
 			data = handle.read(512000)
-		sys.stdout.write('\r[+]\n')
+		fp.flush()
+		fp.close()
 	except:
-		sys.stdout.write('\r[X]\n')
-		sys.stdout.flush()
-		sys.exit(255)
-	sys.stdout.flush()
+		watcher.logEvent('errors', 'Error fetching %s' % uri)
 	return True
 
 	
-def FandA(uri, dst='./'):
+def FandA(uri='', dst='./', watcher=None):
+	if type(uri) != types.StringType or type(dst) != types.StringType or uri == '' or dst == './' or watcher == None:
+		return False
 	try:
 		handle = urllib2.urlopen(uri)
 		data_t = int(handle.info().items()[0][1])
@@ -33,14 +34,10 @@ def FandA(uri, dst='./'):
 		tar = popen2.Popen4('tar %s - -C %s' % (args, dst))
 		while data != '':
 			data_s += int(len(data))
-			sys.stdout.write('\r[ ] Fetching and extracting %s: %d%%' % (os.path.basename(uri), int((float(data_s)/float(data_t))*100)))
-			sys.stdout.flush()
+			watcher.logEvent('events', 'Fetching and extracting %s: %d%%' % (os.path.basename(uri), int((float(data_s)/float(data_t))*100)))
 			tar.tochild.write(data)
 			data = handle.read(512000)
-		sys.stdout.write('\r[+] Fetching and extracting %s: 100%%\n' % (os.path.basename(uri)))
-		sys.stdout.flush()
+		watcher.logEvent('events', 'Fetching and extracting %s: 100%%\n' % (os.path.basename(uri)))
 	except:
-		sys.stdout.write('\r[X] Fetching and extracting %s: ERROR\n' % (os.path.basename(uri)))
-		sys.stdout.flush()
-		sys.exit(-1)
+		watcher.logEvent('errors', 'Fetching and extracting %s: ERROR\n' % (os.path.basename(uri)))
 	return True

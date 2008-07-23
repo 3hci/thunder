@@ -27,8 +27,8 @@ class Engine:
 			('^chroot-batch.*', self.chrootBatch)
 		]
 		for i in self.handler_map:
-				if self.DEBUG == True: self.watcher.logEvent('debug', 'adding callback %s with pattern %s' % (repr(i[1]),i[0]))
-				self.slurp.register_trigger(args={'t_pattern': i[0], 't_callback': i[1]})
+			if self.DEBUG == True: self.watcher.logEvent('debug', 'adding callback %s with pattern %s' % (repr(i[1]),i[0]))
+			self.slurp.register_trigger(args={'t_pattern': i[0], 't_callback': i[1]})
 
 	def setVar(self, txt):
 		if type(txt) != types.StringType and txt != '':
@@ -80,7 +80,7 @@ class Engine:
 	def clearPartitions(self, txt):
 		if type(txt) == types.StringType and txt != '':
 			tmp = self._chkSubs(txt)
-			self.watcher.logEvent('events', txt)
+			self.watcher.logEvent('events', tmp)
 			line = tmp.split()
 			disk = line[1]
 			self._execCmd('dd if=/dev/zero of=%s bs=512K count=1' % disk)
@@ -90,7 +90,7 @@ class Engine:
 	def partitionDisk(self, txt):
 		if type(txt) == types.StringType and txt != '':
 			tmp = self._chkSubs(txt)
-			self.watcher.logEvent('events', txt)
+			self.watcher.logEvent('events', tmp)
 			opts = tmp.split()
 			dev = opts[1]
 			type = opts[2]
@@ -110,211 +110,216 @@ class Engine:
 			return True
 		else: return False
 
+	def commitPartitions(self, txt):
+		if type(txt) == types.StringType and txt != '':
+			kys = self.partitions.keys()
+			kys.sort()
+			for i in kys:
+				if self.partitions[i] != []:
+					self.watcher.logEvent('events', 'Partitioning %s' % i)
+					fp = open('/tmp/partitions', 'w+')
+					for b in self.partitions[i]:
+						fp.write(b+'\n')
+					fp.close()
+					self._execCmd('cat /tmp/partitions | /sbin/sfdisk -uM /dev/%s' % i)
+			return True
+		else: return False
 
-class Thunder:
-	def commit_partitions(self, txt):
-		kys = self.partitions.keys()
-		kys.sort()
-		for i in kys:
-			if self.partitions[i] != []:
-				sys.stdout.write('[ ] Partitioning %s' % i)
-				sys.stdout.flush()
-				fp = open('/tmp/partitions', 'w+')
-				for b in self.partitions[i]:
-					fp.write(b+'\n')
-				fp.close()
-				self._exec_cmd('cat /tmp/partitions | /sbin/sfdisk -uM /dev/%s' % i)
-				sys.stdout.write('\r[+]')
-				print ''
-		return
-
-	def format_partition(self, txt):
-		line = self._chk_subs(txt).split()
-		line.pop(0)
-		part = line[0]
-		labl = line[1].upper()
-		type = line[2]
-		for i in [1,2,3]: line.pop(0)
-		if len(line) > 0:
-			args = ''
-			for i in line:
-				args = args+i+' '
-			t = re.sub('\"', '', args)
-			args = t
-			if self._which('mkfs.%s' % type) != False:
-				cmd = 'mkfs.%s -L %s %s %s' % (type, labl, re.sub("'", "", args), part)
-		else:
-			if self._which('mkswap') != False:
-				cmd = 'mkswap -L %s %s' % (labl, part)
-		sys.stdout.write('[ ] Formatting %s as %s\r' % (part,type))
-		sys.stdout.flush()
-		self._exec_cmd(cmd)
-		sys.stdout.write('\r[+]\n')
-		return
-
-	def mount_partition(self, txt):
-		line = self._chk_subs(txt).split()
-		line.pop(0)
-		cmd = 'mount '
-		if len(line) > 3:
-			who = line[0]
+	def formatPartition(self, txt):
+		if type(txt) == types.StringType and txt != '':
+			line = self._chk_subs(txt).split()
+			self.watcher.logEvent('events', line)
 			line.pop(0)
-			what = line[0]
-			line.pop(0)
-			where = line[0]
-			line.pop(0)
-			opts = ''
-			for i in line:
-				opts = opts+i+' '
-			t = re.sub('\"','',opts)
-			opts = t
-			t = re.sub("'", '', opts)
-			opts = t
-			gen = 1
-		elif len(line) == 3:
-			who = line[0]
-			what = line[1]
-			where = line[2]
-			gen = 1
-		elif len(line) == 2:
-			gen = 0
-			if line[0] == 'proc':
-				cmd = cmd+'-t proc proc %s' % line[1]
-				if os.path.isdir(line[1]) == False:
-					self._exec_cmd('mkdir %s && sleep 1' % line[1])
-				who = 'proc'
-				where = line[1]
-		
-		if gen == 1:
-			if len(line) == 3:
-				if what == 'auto':
-					cmd = cmd+'%s %s' % (who, where)
-				else:
-					cmd = cmd+'-t %s %s %s' % (what, who, where)
+			part = line[0]
+			labl = line[1].upper()
+			type = line[2]
+			for i in [1,2,3]: line.pop(0)
+			if len(line) > 0:
+				args = ''
+				for i in line:
+					args = args+i+' '
+				t = re.sub('\"', '', args)
+				args = t
+				if self._which('mkfs.%s' % type) != False:
+					cmd = 'mkfs.%s -L %s %s %s' % (type, labl, re.sub("'", "", args), part)
 			else:
-				if what == 'auto':
-					cmd = cmd+'-o %s %s %s' % (opts, who, where)
-				else:
-					if what != 'none':
-						cmd = cmd+'-o %s -t %s %s %s' % (opts, what, who, where)
+				if self._which('mkswap') != False:
+					cmd = 'mkswap -L %s %s' % (labl, part)
+			self.watcher.logEvent('events','Formatting %s as %s\r' % (part,type))
+			self._execCmd(cmd)
+			return True
+		else: return False
+
+	def mountPartition(self, txt):
+		if type(txt) == types.StringType and txt != '':
+			line = self._chk_subs(txt).split()
+			self.watcher.logEvent('events', line)
+			line.pop(0)
+			cmd = 'mount '
+			if len(line) > 3:
+				who = line[0]
+				line.pop(0)
+				what = line[0]
+				line.pop(0)
+				where = line[0]
+				line.pop(0)
+				opts = ''
+				for i in line:
+					opts = opts+i+' '
+				t = re.sub('\"','',opts)
+				opts = t
+				t = re.sub("'", '', opts)
+				opts = t
+				gen = 1
+			elif len(line) == 3:
+				who = line[0]
+				what = line[1]
+				where = line[2]
+				gen = 1
+			elif len(line) == 2:
+				gen = 0
+				if line[0] == 'proc':
+					cmd = cmd+'-t proc proc %s' % line[1]
+					if os.path.isdir(line[1]) == False:
+						self._execCmd('mkdir %s && sleep 1' % line[1])
+						if self.DEBUG == True: self.watcher.logEvent('debug', 'mkdir %s && sleep 1' % line[1])
+					who = 'proc'
+					where = line[1]
+			if gen == 1:
+				if len(line) == 3:
+					if what == 'auto':
+						cmd = cmd+'%s %s' % (who, where)
 					else:
+						cmd = cmd+'-t %s %s %s' % (what, who, where)
+				else:
+					if what == 'auto':
 						cmd = cmd+'-o %s %s %s' % (opts, who, where)
-			if os.path.isdir(where) == False:
-				self._exec_cmd('mkdir %s && sleep 1' % where)
-		sys.stdout.write('[ ] Mounting %s on %s' % (who, where))
-		sys.stdout.flush()
-		self._exec_cmd(cmd)
-		sys.stdout.write('\r[+]')
-		print ''
-		return
+					else:
+						if what != 'none':
+							cmd = cmd+'-o %s -t %s %s %s' % (opts, what, who, where)
+						else:
+							cmd = cmd+'-o %s %s %s' % (opts, who, where)
+				if os.path.isdir(where) == False:
+					self._execCmd('mkdir %s && sleep 1' % where)
+					if self.DEBUG == True: self.watcher.logEvent('debug', 'mkdir %s && sleep 1' % where)
+			self.watcher.logEvent('events', 'Mounting %s on %s' % (who, where))
+			self._execCmd(cmd)
+			return True
+		else: return False
 
-	def swapon(self, txt):
-		tmp = self._chk_subs(txt).split()
-		tmp.pop(0)
-		for i in tmp:
-			if self._which('swapon') != False:
-				cmd = 'swapon %s' % i
-				sys.stdout.write('[ ] Activating swap on %s' % i)
-				sys.stdout.flush()
-				self._exec_cmd(cmd)
-				sys.stdout.write('\r[+]\n')
-		return
+	def swapOn(self, txt):
+		if type(txt) == types.StringType and txt != '':
+			tmp = self._chkSubs(txt).split()
+			self.watcher.logEvent('events', tmp)
+			tmp.pop(0)
+			for i in tmp:
+				if self._which('swapon') != False:
+					cmd = 'swapon %s' % i
+					self.watcher.logEvent('events', 'Activating swap on %s' % i)
+					self._execCmd(cmd)
+			return True
+		else: return False
 
-	def fetch(self, txt):
-		tmp = self._chk_subs(txt)
-		uri = tmp.split()[1]
-		tmp = net.Fetch(uri)
-		return
+	def fetchUri(self, txt):
+		if type(txt) == types.StringType and txt != '':
+			tmp = self._chkSubs(txt)
+			self.watcher.logEvent('events', tmp)
+			uri = tmp.split()[1]
+			tmp = net.Fetch(uri, self.watcher)
+			return True
+		else: return False
 
-	def fetch_and_extract(self, txt):
-		tmp = self._chk_subs(txt)
-		uri = tmp.split()[1]
-		archive = os.path.basename(uri)
-		try: lcation = tmp.split()[2]
-		except: lcation = './'
-		if archive[0] == '%':
-			archive_t = self._chk_subs(archive)
-			archive = archive_t
-		if lcation[0] == '%':
-			lcation_t = self._chk_subs(lcation)
-			lcation = lcation_t
-		if archive[-2:] == 'z2': args = '-jxf'
-		if archive[-2:] == 'gz': args = '-zxf'
-		tmp = net.FandA(uri, lcation)
-		return
+	def fetchAndExtract(self, txt):
+		if type(txt) == types.StringType and txt != '':
+			tmp = self._chkSubs(txt)
+			uri = tmp.split()[1]
+			archive = os.path.basename(uri)
+			try: lcation = tmp.split()[2]
+			except: lcation = './'
+			tmp = net.FandA(uri, lcation, self.watcher)
+			return True
+		else: return False
 
-	def exec_command(self, txt):
-		ln_t = self._chk_subs(txt).split()
-		ln_t.pop(0)
-		li_t = ''
-		for i in ln_t: li_t = li_t+i+' '
-		if li_t[0].isalpha() == False and li_t[len(li_t)-1].isalpha() == False:
-			line = li_t.strip()[1:][:-1]
-		elif li_t[0].isalpha() == False and li_t[len(li_t)-1].isalpha() == True:
-			line = li_t[1:]
-		elif li_t[0].isalpha() == True and li_t[len(li_t)-1].isalpha() == False:
-			line = li_t.strip()[:-1]
-		else: line = li_t
-		self._exec_cmd(line, flag=0)
-		return
+	def execCommand(self, txt):
+		if type(txt) == types.StringType and txt != '':
+			ln_t = self._chkSubs(txt).split()
+			self.watcher.logEvent('events', ln_t)
+			ln_t.pop(0)
+			li_t = ''
+			for i in ln_t: li_t = li_t+i+' '
+			if li_t[0].isalpha() == False and li_t[len(li_t)-1].isalpha() == False:
+				line = li_t.strip()[1:][:-1]
+			elif li_t[0].isalpha() == False and li_t[len(li_t)-1].isalpha() == True:
+				line = li_t[1:]
+			elif li_t[0].isalpha() == True and li_t[len(li_t)-1].isalpha() == False:
+				line = li_t.strip()[:-1]
+			else: line = li_t
+			self._execCmd(line, flag=0)
+			return True
+		else: return False
 
-	def chroot_command(self, txt):
-		tmp = self._chk_subs(txt)
-		line = tmp.split()
-		line.pop(0)
-		script = ''
-		for i in line: script = script+i+' '
-		self.chroot_commands.append(script)
-		return
+	def chrootCommand(self, txt):
+		if type(txt) == types.StringType and txt != '':
+			tmp = self._chkSubs(txt)
+			self.watcher.logEvent('events', tmp)
+			line = tmp.split()
+			line.pop(0)
+			script = ''
+			for i in line: script = script+i+' '
+			self.chroot_cmds.append(script)
+			return True
+		else: return False
 
-	def chroot_batch(self, txt):
-		tmp = self._chk_subs(txt)
-		chroot = tmp.split()[1]
-		sys.stdout.write('[ ] Executing commands in chroot.')
-		sys.stdout.flush()
-		fp = open('%s/chroot-commands.sh' % chroot, 'w+')
-		fp.write('#!/bin/bash -x\n')
-		for i in self.chroot_commands:
-			line = i[1:][:-2]
-			fp.write(line+'\n')
-		self._exec_cmd('chmod +x %s/chroot-commands.sh' % chroot)
-		fp.close()
-		time.sleep(1)
-		self._exec_cmd('chroot %s ./chroot-commands.sh' % chroot)
-		sys.stdout.write('\r[+]\n')
-		self.chroot_commands = []
-		return
+	def chrootBatch(self, txt):
+		if type(txt) == types.StringType and txt != '':
+			tmp = self._chkSubs(txt)
+			self.watcher.logEvent('events', tmp)
+			chroot = tmp.split()[1]
+			self.watcher.logEvent('events', 'Executing commands in chroot.')
+			fp = open('%s/chroot-commands.sh' % chroot, 'w+')
+			fp.write('#!/bin/bash -x\n')
+			for i in self.chroot_cmds:
+				line = i[1:][:-2]
+				fp.write(line+'\n')
+			fp.close()
+			self._execCmd('chmod +x %s/chroot-commands.sh' % chroot)
+			time.sleep(1)
+			self._execCmd('chroot %s ./chroot-commands.sh' % chroot)
+			self.chroot_cmds = []
+			return True
+		else: return False
 
-	def _exec_cmd(self, cmd, flag=1):
-		line = self._chk_subs(cmd)
-		if flag != 1: sys.stdout.write('[ ]  %s...' % line[:55])
-		if flag != 1: self.cmd_log.write('\n## THUNDER: exec-command\n%s\n' % line)
-		if self.DEBUG == True: self.watcher.logEvent('debug', 'Executing command: %s' % line)
-		else: self.cmd_log.write('%s\n' % line)
-		pipe = popen2.Popen4(line)
-		buff = pipe.fromchild.readline()
-		while buff != '':
-			self.cmd_log.write(buff.strip()+'\n')
+	def _execCmd(self, cmd, flag=1):
+		if type(cmd) == types.StringType and cmd != '':
+			line = self._chk_subs(cmd)
+			self.watcher.logEvent('events', line)
+			if self.DEBUG == True: self.watcher.logEvent('debug', 'Executing command: %s' % line)
+			pipe = popen2.Popen4(line)
 			buff = pipe.fromchild.readline()
-		if pipe.poll() > 0:
-			sys.stdout.write('\r[X] Error while running command:\n%s...\n' % line)
-			sys.exit(255)
-		else:
-			if flag != 1: sys.stdout.write('\r[+] %s...\n' % line[:55])
-		return
+			while buff != '':
+				self.watcher.logEvent('output', buff)
+				buff = pipe.fromchild.readline()
+			if pipe.poll() > 0:
+				self.watcher.logEvent('errors', 'Error while running command:\n%s...\n' % line)
+			return True
+		else: return False
 
-	def _chk_subs(self, txt):
-		key = ''
-		retv = ''
-		for i in txt.split():
-			if i[0] == '%':
-				key = i[1:]	
-				for a in self.th_vars:
-					if key == a[0]:
-						 retv = retv+a[1]+' '
-			else:
-				retv = retv+i+' '
-		return retv
+	def _chkSubs(self, txt):
+		if type(txt) == types.StringType and txt != '':
+			key = ''
+			retv = ''
+			for i in txt.split():
+				if i[0] == '%':
+					key = i[1:]	
+					for a in self.th_vars:
+						if key == a[0]:
+							if self.DEBUG == True:
+								self.watcher.logEvent('debug', 'Replacing %s with %s' % (a[0], a[1]))
+							retv = retv+a[1]+' '
+				else:
+					retv = retv+i+' '
+			return retv
+		else: return False
 	
 	def _which(self, prog):
 		for path in os.getenv('PATH').split(':'):
@@ -324,7 +329,7 @@ class Thunder:
 						return os.path.join(path, file) 
 		return False
 
-	def _toggle_debug(self):
+	def _toggleDebug(self):
 		if self.DEBUG == False: self.DEBUG = True
 		if self.DEBUG == True: self.DEBUG = False
 		return None
