@@ -1,3 +1,7 @@
+* Move all the installer.py code into engine.py, and make all functions return their command strings, or an array of command strings,
+* thus allowing the intstaller.py to display it's progress and program state however it wishes and abstracting the main body of code
+* out just a bit.
+#
 * SELinux support
 * LVM support
 * Software RAID support
