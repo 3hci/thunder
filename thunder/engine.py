@@ -1,9 +1,14 @@
 #!/usr/bin/env python
-import os, sys, re
+# stdlib imports
+import os
+import sys
+import re
 import time, random
 import popen2
-from thunder import slurp
-from thunder import net
+# thunder imports
+import slurp
+import net
+import event
 
 class Thunder:
 	def __init__(self, file):

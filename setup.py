@@ -6,6 +6,8 @@ setup(name='thunder',
 	  	'thunder/__init__', 'thunder/slurp', 'thunder/net', 'thunder/engine',
 		'thunder/event'
 	  ],
-	  data_files=[('/sbin/', ['bin/installer.py']), ('/etc', ['etc/install.th'])]
+	  data_files=[('/sbin/', [
+			'bin/installer-curses.py', 'bin/installer-stdout.py'
+		]), ('/etc', ['etc/install.th'])]
       )
 
