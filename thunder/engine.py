@@ -12,9 +12,11 @@ import event
 
 class Thunder:
 	def __init__(self, file):
+		self.DEBUG = False
 		self.watcher = event.Watcher()
 		self.cmd_log = open('/tmp/thunder.log', 'w+')
 		self.handler_map = [
+			('^debug.*', self._toggle_debug),
 			('^set.*', self.set), ('^detect-disks.*', self.detect_disks),
 			('^clear-partitions.*', self.clear_partitions),
 			('^partition-disk.*', self.partition_disk),	
@@ -35,7 +37,9 @@ class Thunder:
 		for i in self.handler_map:
 			(pat, cback) = i
 			self.slurp.register_trigger(args={'t_pattern': pat, 't_callback': cback})
+			if self.DEBUG = True: self.watcher.logEvent('debug', 'args={t_pattern: %s, t_callback: %s}' % (pat, cback))
 		fp = open(file, 'r')
+		if self.DEBUG = True: self.watcher.logEvent('debug', 'Opened spec file %s' % file)
 		self.slurp.run(fp)
 
 	def set(self, txt):
@@ -321,6 +325,8 @@ class Thunder:
 						return os.path.join(path, file) 
 		return False
 
+	def _toggle_debug(self):
+		if self.DEBUG == False: self.DEBUG = True
+		if self.DEBUG == True: self.DEBUG = False
+		return None
 
-if __name__ == '__main__':
-	o = Thunder('/etc/install.th')
