@@ -10,6 +10,79 @@ import slurp
 import net
 import event
 
+class Engine:
+	def __init__(self):
+		self.DEBUG = False ; self.watcher = event.Watcher()
+		self.partitions = {} ; self.th_vars = []
+		self.host_cmds = [] ; self.chroot_cmds = []
+		self.slurp = slurp.Proc() ; self.handler_map = [
+			('^debug.*', self._toggleDebug),
+			('^set.*', self.setVar), ('^detect-disks.*', self.detectDisks),
+			('^clear-partitions.*', self.clearPartitions),
+			('^partition-disk.*', self.partitionDisk),	
+			('^commit-partitions.*', self.commitPartitions),
+			('^format-partition.*', self.formatPartition),
+			('^mount-partition.*', self.mountPartition),
+			('^swapon.*', self.swapOn), ('^exec-command.*', self.execCommand),
+			('^fetch.*', self.fetchUri),
+			('^fetch-and-extract.*', self.fetchAndExtract),
+			('^chroot-command.*', self.chrootCommand),
+			('^chroot-batch.*', self.chrootBatch)
+		]
+		for i in self.handler_map:
+				if self.DEBUG == True: self.watcher.logEvent('debug', 'adding callback %s with pattern %s' % (repr(i[1]),i[0]))
+				self.slurp.register_trigger(args={'t_pattern': i[0], 't_callback': i[1]})
+
+	def setVar(self, txt):
+		if type(txt) != types.StringType and txt != '':
+			tmp = txt.split()
+			self.th_vars.append((tmp[1], tmp[2]))
+			if self.DEBUG == True: self.watcher.logEvent('debug', 'Setting key %s to value %s' % (tmp[1], tmp[2]))
+			self.watcher.logEvent('events', txt.strip()+'\n')
+			return True
+		else:	return False
+	
+	def detectDisks(self, txt):
+		self.watcher.logEvent('events', txt.strip()+'\n')
+		tmp_dsks = []
+		for i in os.listdir('/dev/'):
+			if i.find('hd') != -1 or i.find('sd') != -1:
+				if len(i) == 3: tmp_dsks.append(i)
+		self.th_disks = tmp_dsks
+		self.th_disks.sort()
+		line = txt.split()
+		line.pop(0)
+		for i in range(len(line)):
+			if line[i] == 'prefer':
+				prefer = line[(i+1)]
+			if line[i] == 'accept':
+				accept = line[(i+1)]
+		pref_tmp = []
+		acpt_tmp = []
+		for i in self.th_disks:
+			if i.find(prefer) != -1:
+				pref_tmp.append(i)
+			if i.find(accept) != -1:
+				acpt_tmp.append(i)
+		self.disks = []
+		pref_tmp.sort()
+		acpt_tmp.sort()
+		for a in (pref_tmp, acpt_tmp):
+			for b in a:
+				sys.stdout.write(b+' ')
+				self.disks.append(b)
+		cnt=0
+		for i in self.disks:
+			self.th_vars.append(('drive%d' % cnt, '/dev/%s' % i))
+			if self.DEBUG == True: self.watcher.logEvent('debug', 'Setting key drive%d to value /dev/%s' % (cnt,i))
+			self.partitions[i] = []
+			cnt += 1
+		print ''
+		return self.disks
+
+
+
+
 class Thunder:
 	def __init__(self, file):
 		self.DEBUG = False
@@ -45,6 +118,7 @@ class Thunder:
 	def set(self, txt):
 		tmp = txt.split()
 		self.th_vars.append((tmp[1], tmp[2]))
+		if self.DEBUG == True: self.watcher.logEvent('debug', 'Setting key %s to value %s' % (tmp[1], tmp[2]))
 		return
 	
 	def detect_disks(self, txt):
@@ -79,6 +153,7 @@ class Thunder:
 		cnt=0
 		for i in self.disks:
 			self.th_vars.append(('drive%d' % cnt, '/dev/%s' % i))
+			if self.DEBUG == True: self.watcher.logEvent('debug', 'Setting key drive%d to value /dev/%s' % (cnt,i))
 			self.partitions[i] = []
 			cnt += 1
 		print ''
@@ -291,6 +366,7 @@ class Thunder:
 		line = self._chk_subs(cmd)
 		if flag != 1: sys.stdout.write('[ ]  %s...' % line[:55])
 		if flag != 1: self.cmd_log.write('\n## THUNDER: exec-command\n%s\n' % line)
+		if self.DEBUG == True: self.watcher.logEvent('debug', 'Executing command: %s' % line)
 		else: self.cmd_log.write('%s\n' % line)
 		pipe = popen2.Popen4(line)
 		buff = pipe.fromchild.readline()
