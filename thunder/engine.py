@@ -12,6 +12,7 @@ import event
 
 class Thunder:
 	def __init__(self, file):
+		self.watcher = event.Watcher()
 		self.cmd_log = open('/tmp/thunder.log', 'w+')
 		self.handler_map = [
 			('^set.*', self.set), ('^detect-disks.*', self.detect_disks),

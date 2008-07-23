@@ -8,6 +8,7 @@ class Watcher:
 		self.output = []
 		self.events = []
 		self.errors = []
+		self.debug = []
 		self.log = open('/tmp/thunder.log', 'a+')
 
 	def _log(self, msg=''):
@@ -33,6 +34,7 @@ class Watcher:
 				if ev_type == 'output': self.output.append(ev_data)
 				if ev_type == 'events': self.events.append(ev_data)
 				if ev_type == 'errors': self.errors.append(ev_data)
+				if ev_type == 'debug': self.debug.append(ev_data)
 				self._log(event)
 				return True
 		except InvalidEvent:
@@ -55,6 +57,9 @@ class Watcher:
 			elif ev_type == 'errors':
 				retv = self.errors[0]
 				self.errors.pop(0)
+			elif ev_type == 'debug':
+				retv = self.debug[0]
+				self.debug.pop(0)
 			else: raise InvalidEvent
 		except InvalidEvent:
 			err = 'ERROR: Invalid data passed to getNextEvent()\nDATA: (%s)' % (repr(ev_type))
