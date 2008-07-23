@@ -31,7 +31,27 @@ class Thunder:
 			self.slurp.register_trigger(args={'t_pattern': pat, 't_callback': cback})
 		fp = open(file, 'r')
 		self.slurp.run(fp)
-
+		self.scrr=curses.initscr()
+		curses.noecho() 
+		curses.cbreak()
+		stdscr.keypad(1)
+		Y, X = self.scr.getmaxyx()
+		self.X, self.Y = X-2, Y-9-1
+		self.char = char
+		self.scr.clear()	
+		# Draw a border around the board
+		border_line='+'+(self.X*'-')+'+'
+		self.scr.addstr(0, 0, border_line)
+		self.scr.addstr(self.Y+1,0, border_line)
+		for y in range(0, self.Y): 
+			self.scr.addstr(1+y, 0, '|') 
+			self.scr.addstr(1+y, self.X+1, '|')
+		for y in range(0, 7):
+			self.scr.addstr((Y-8)+y, 0, '|')
+			self.scr.addstr((Y-8)+y, self.X+1, '|')
+		self.scr.addstr(Y-2, 0, border_line)
+		self.scr.refresh()
+		
 	def set(self, txt):
 		tmp = txt.split()
 		self.th_vars.append((tmp[1], tmp[2]))
@@ -315,32 +335,29 @@ class Thunder:
 						return os.path.join(path, file) 
 		return False
 
+	def _main(self, stdscr):
+		stdscr.clear()
+		stdscr_y, stdscr_x = stdscr.getmaxyx()
+		menu_y=(stdscr_y-1)-1
+		display_menu(stdscr, menu_y)
+		stdscr.refresh()
+		subwin=stdscr.subwin(stdscr_y-3, stdscr_x, 0, 0) 
+		board=LifeBoard(subwin, char=ord('*'))
+		board.display(update_board=0)
+		xpos, ypos = board.X/2, board.Y/2
+		while (1):
+			stdscr.move(1+ypos, 1+xpos)     # Move the cursor
+			stdscr.refresh()
+			c=stdscr.getch()		# Get a keystroke
+			if 0<c<256:
+				c=chr(c)
+				if c in 'Qq': break
+				else: pass                  # Ignore incorrect keys
 
 if __name__ == '__main__':
 	o = Thunder('/etc/install.th')
 
 
-#class LifeBoard:
-#    def __init__(self, scr, char=ord('*')):
-#	self.state={} ; self.scr=scr
-#	Y, X = self.scr.getmaxyx()
-#	self.X, self.Y = X-2, Y-9-1
-#	self.char = char
-#	self.scr.clear()	
-#
-#	# Draw a border around the board
-#	border_line='+'+(self.X*'-')+'+'
-#	self.scr.addstr(0, 0, border_line)
-#	self.scr.addstr(self.Y+1,0, border_line)
-#	for y in range(0, self.Y): 
-#	    self.scr.addstr(1+y, 0, '|') 
-#	    self.scr.addstr(1+y, self.X+1, '|')
-#	for y in range(0, 7):
-#			self.scr.addstr((Y-8)+y, 0, '|')
-#			self.scr.addstr((Y-8)+y, self.X+1, '|')
-#	self.scr.addstr(Y-2, 0, border_line)
-#	self.scr.refresh()
-#
 #    def display(self, update_board=1):
 #	M,N = self.X, self.Y 
 #	if not update_board:
