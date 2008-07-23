@@ -1,13 +1,10 @@
 #!/usr/bin/env python
 # stdlib imports
-import os
-import sys
-import re
-import time, random
-import popen2
+import os,  sys,  re
+import time,  random
+import types, popen2
 # thunder imports
-import slurp
-import net
+import slurp, net
 import event
 
 class Engine:
@@ -43,152 +40,78 @@ class Engine:
 		else:	return False
 	
 	def detectDisks(self, txt):
-		self.watcher.logEvent('events', txt.strip()+'\n')
-		tmp_dsks = []
-		for i in os.listdir('/dev/'):
-			if i.find('hd') != -1 or i.find('sd') != -1:
-				if len(i) == 3: tmp_dsks.append(i)
-		self.th_disks = tmp_dsks
-		self.th_disks.sort()
-		line = txt.split()
-		line.pop(0)
-		for i in range(len(line)):
-			if line[i] == 'prefer':
-				prefer = line[(i+1)]
-			if line[i] == 'accept':
-				accept = line[(i+1)]
-		pref_tmp = []
-		acpt_tmp = []
-		for i in self.th_disks:
-			if i.find(prefer) != -1:
-				pref_tmp.append(i)
-			if i.find(accept) != -1:
-				acpt_tmp.append(i)
-		self.disks = []
-		pref_tmp.sort()
-		acpt_tmp.sort()
-		for a in (pref_tmp, acpt_tmp):
-			for b in a:
-				sys.stdout.write(b+' ')
-				self.disks.append(b)
-		cnt=0
-		for i in self.disks:
-			self.th_vars.append(('drive%d' % cnt, '/dev/%s' % i))
-			if self.DEBUG == True: self.watcher.logEvent('debug', 'Setting key drive%d to value /dev/%s' % (cnt,i))
-			self.partitions[i] = []
-			cnt += 1
-		print ''
-		return self.disks
+		if type(txt) == types.StringTYpe and txt != '':
+			self.watcher.logEvent('events', txt.strip()+'\n')
+			tmp_dsks = []
+			for i in os.listdir('/dev/'):
+				if i.find('hd') != -1 or i.find('sd') != -1:
+					if len(i) == 3: tmp_dsks.append(i)
+			self.th_disks = tmp_dsks
+			self.th_disks.sort()
+			line = txt.split()
+			line.pop(0)
+			for i in range(len(line)):
+				if line[i] == 'prefer':
+					prefer = line[(i+1)]
+				if line[i] == 'accept':
+					accept = line[(i+1)]
+			pref_tmp = []
+			acpt_tmp = []
+			for i in self.th_disks:
+				if i.find(prefer) != -1:
+					pref_tmp.append(i)
+				if i.find(accept) != -1:
+					acpt_tmp.append(i)
+			self.disks = []
+			pref_tmp.sort()
+			acpt_tmp.sort()
+			for a in (pref_tmp, acpt_tmp):
+				for b in a:
+					self.disks.append(b)
+			cnt=0
+			for i in self.disks:
+				self.th_vars.append(('drive%d' % cnt, '/dev/%s' % i))
+				if self.DEBUG == True: self.watcher.logEvent('debug', 'Setting key drive%d to value /dev/%s' % (cnt,i))
+				self.partitions[i] = []
+				cnt += 1
+			return True
+		else: return False
 
+	def clearPartitions(self, txt):
+		if type(txt) == types.StringType and txt != '':
+			tmp = self._chkSubs(txt)
+			self.watcher.logEvent('events', txt)
+			line = tmp.split()
+			disk = line[1]
+			self._execCmd('dd if=/dev/zero of=%s bs=512K count=1' % disk)
+			return True
+		else: return False
 
+	def partitionDisk(self, txt):
+		if type(txt) == types.StringType and txt != '':
+			tmp = self._chkSubs(txt)
+			self.watcher.logEvent('events', txt)
+			opts = tmp.split()
+			dev = opts[1]
+			type = opts[2]
+			if type == 'primary' or type == 'logical':
+				pnum = opts[3]
+				pnam = opts[4]
+				if opts[5] != 'all': psze = opts[5]
+				if opts[5] == 'all': psze = ''
+				ptyp = opts[6]
+				self.th_vars.append((pnam, '%s%s' % (dev,pnum)))
+				if self.DEBUG == True: self.watcher.logEvent('debug', 'Setting key %s to value %s%s' % (pnam,dev,pnum))
+				self.partitions[os.path.basename(dev)].append(',%s,%s' % (psze,ptyp))
+			elif type == 'extended':
+				if opts[3] != 'all': psze = opts[3]
+				else: psze = ''
+				self.partitions[os.path.basename(dev)].append(',%s,E' % psze)
+			return True
+		else: return False
 
 
 class Thunder:
-	def __init__(self, file):
-		self.DEBUG = False
-		self.watcher = event.Watcher()
-		self.cmd_log = open('/tmp/thunder.log', 'w+')
-		self.handler_map = [
-			('^debug.*', self._toggle_debug),
-			('^set.*', self.set), ('^detect-disks.*', self.detect_disks),
-			('^clear-partitions.*', self.clear_partitions),
-			('^partition-disk.*', self.partition_disk),	
-			('^commit-partitions.*', self.commit_partitions),
-			('^format-partition.*', self.format_partition),
-			('^mount-partition.*', self.mount_partition),
-			('^swapon.*', self.swapon), ('^exec-command.*', self.exec_command),
-			('^fetch.*', self.fetch),
-			('^fetch-and-extract.*', self.fetch_and_extract),
-			('^chroot-command.*', self.chroot_command),
-			('^chroot-batch.*', self.chroot_batch)
-		]
-		self.slurp = slurp.Proc()
-		self.th_vars = []
-		self.partitions = {} 
-		self.host_commands = []
-		self.chroot_commands = []
-		for i in self.handler_map:
-			(pat, cback) = i
-			self.slurp.register_trigger(args={'t_pattern': pat, 't_callback': cback})
-			if self.DEBUG = True: self.watcher.logEvent('debug', 'args={t_pattern: %s, t_callback: %s}' % (pat, cback))
-		fp = open(file, 'r')
-		if self.DEBUG = True: self.watcher.logEvent('debug', 'Opened spec file %s' % file)
-		self.slurp.run(fp)
-
-	def set(self, txt):
-		tmp = txt.split()
-		self.th_vars.append((tmp[1], tmp[2]))
-		if self.DEBUG == True: self.watcher.logEvent('debug', 'Setting key %s to value %s' % (tmp[1], tmp[2]))
-		return
-	
-	def detect_disks(self, txt):
-		sys.stdout.write('Detecting disks: ')
-		tmp_dsks = []
-		for i in os.listdir('/dev/'):
-			if i.find('hd') != -1 or i.find('sd') != -1:
-				if len(i) == 3: tmp_dsks.append(i)
-		self.th_disks = tmp_dsks
-		self.th_disks.sort()
-		line = txt.split()
-		line.pop(0)
-		for i in range(len(line)):
-			if line[i] == 'prefer':
-				prefer = line[(i+1)]
-			if line[i] == 'accept':
-				accept = line[(i+1)]
-		pref_tmp = []
-		acpt_tmp = []
-		for i in self.th_disks:
-			if i.find(prefer) != -1:
-				pref_tmp.append(i)
-			if i.find(accept) != -1:
-				acpt_tmp.append(i)
-		self.disks = []
-		pref_tmp.sort()
-		acpt_tmp.sort()
-		for a in (pref_tmp, acpt_tmp):
-			for b in a:
-				sys.stdout.write(b+' ')
-				self.disks.append(b)
-		cnt=0
-		for i in self.disks:
-			self.th_vars.append(('drive%d' % cnt, '/dev/%s' % i))
-			if self.DEBUG == True: self.watcher.logEvent('debug', 'Setting key drive%d to value /dev/%s' % (cnt,i))
-			self.partitions[i] = []
-			cnt += 1
-		print ''
-		return self.disks
-
-	def clear_partitions(self, txt):
-		sys.stdout.write('[ ] Clearing partitions\r')
-		sys.stdout.flush()
-		tmp = self._chk_subs(txt)
-		line = tmp.split()
-		disk = line[1]
-		self._exec_cmd('dd if=/dev/zero of=%s bs=512K count=1' % disk)
-		sys.stdout.write('[+] Clearing partition table on %s\n' % disk)
-		sys.stdout.flush()
-		return
-
-	def partition_disk(self, txt):
-		tmp = self._chk_subs(txt)
-		opts = tmp.split()
-		dev = opts[1]
-		type = opts[2]
-		if type == 'primary' or type == 'logical':
-			pnum = opts[3]
-			pnam = opts[4]
-			if opts[5] != 'all': psze = opts[5]
-			if opts[5] == 'all': psze = ''
-			ptyp = opts[6]
-			self.th_vars.append((pnam, '%s%s' % (dev,pnum)))
-			self.partitions[os.path.basename(dev)].append(',%s,%s' % (psze,ptyp))
-		elif type == 'extended':
-			if opts[3] != 'all': psze = opts[3]
-			else: psze = ''
-			self.partitions[os.path.basename(dev)].append(',%s,E' % psze)
-		return
-
 	def commit_partitions(self, txt):
 		kys = self.partitions.keys()
 		kys.sort()
