@@ -8,11 +8,11 @@ import slurp, net
 import event
 
 class Engine:
-	def __init__(self):
+	def __init__(self, spec):
 		self.DEBUG = False ; self.watcher = event.Watcher()
 		self.partitions = {} ; self.th_vars = []
 		self.host_cmds = [] ; self.chroot_cmds = []
-		self.slurp = slurp.Proc() ; self.handler_map = [
+		self.profile = [] ; self.handler_map = [
 			('^debug.*', self._toggleDebug),
 			('^set.*', self.setVar), ('^detect-disks.*', self.detectDisks),
 			('^clear-partitions.*', self.clearPartitions),
@@ -26,9 +26,26 @@ class Engine:
 			('^chroot-command.*', self.chrootCommand),
 			('^chroot-batch.*', self.chrootBatch)
 		]
+		self.watcher.logEvent('events', 'Profiling spec file %s' % spec)
+		self._profile(spec, self.handler_map)
+		self.slurp = slurp.Proc()
 		for i in self.handler_map:
 			if self.DEBUG == True: self.watcher.logEvent('debug', 'adding callback %s with pattern %s' % (repr(i[1]),i[0]))
 			self.slurp.register_trigger(args={'t_pattern': i[0], 't_callback': i[1]})
+		sp = open(spec, 'r')
+		self.slurp.run(sp)
+
+	def _profile(self, spec, map):
+		slrp = slurp.Proc()
+		for i in map:
+			slrp.register_trigger(args={'t_pattern': i[0], 't_callback': self._profileFunc)
+		slrp.run(open(spec, 'r'))
+		slrp = None
+
+	def _profileFunc(self, txt):
+		cmd = txt.split()[0]
+		num = len(self.profile) - 1
+		self.profile.append((num, cmd))
 
 	def setVar(self, txt):
 		if type(txt) != types.StringType and txt != '':
