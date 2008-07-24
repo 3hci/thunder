@@ -35,18 +35,6 @@ class Engine:
 		sp = open(spec, 'r')
 		self.slurp.run(sp)
 
-	def _profile(self, spec, map):
-		slrp = slurp.Proc()
-		for i in map:
-			slrp.register_trigger(args={'t_pattern': i[0], 't_callback': self._profileFunc)
-		slrp.run(open(spec, 'r'))
-		slrp = None
-
-	def _profileFunc(self, txt):
-		cmd = txt.split()[0]
-		num = len(self.profile) - 1
-		self.profile.append((num, cmd))
-
 	def setVar(self, txt):
 		if type(txt) != types.StringType and txt != '':
 			tmp = txt.split()
@@ -350,4 +338,19 @@ class Engine:
 		if self.DEBUG == False: self.DEBUG = True
 		if self.DEBUG == True: self.DEBUG = False
 		return None
+
+	def _getWatcher(self):
+		return self.watcher
+
+	def _profile(self, spec, map):
+		slrp = slurp.Proc()
+		for i in map:
+			slrp.register_trigger(args={'t_pattern': i[0], 't_callback': self._profileFunc)
+		slrp.run(open(spec, 'r'))
+		slrp = None
+
+	def _profileFunc(self, txt):
+		cmd = txt.split()[0]
+		num = len(self.profile) - 1
+		self.profile.append((num, cmd))
 
